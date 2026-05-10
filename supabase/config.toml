@@ -1,0 +1,10 @@
+project_id = "iykktmljrpqjidjozemm"
+
+[functions.bootstrap-users]
+verify_jwt = false
+
+[functions.ai-tryon]
+verify_jwt = true
+
+[functions.seed-products]
+verify_jwt = false
