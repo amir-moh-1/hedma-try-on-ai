@@ -98,5 +98,5 @@ export function useAuth() {
 export async function logActivity(action: string, details: Record<string, unknown> = {}) {
   const { data } = await supabase.auth.getUser();
   if (!data.user) return;
-  await supabase.from("activity_logs").insert({ user_id: data.user.id, action, details });
+  await supabase.from("activity_logs").insert({ user_id: data.user.id, action, details: details as never });
 }
