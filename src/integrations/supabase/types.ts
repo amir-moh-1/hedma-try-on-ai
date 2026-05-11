@@ -68,6 +68,93 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_photos: {
+        Row: {
+          approved: boolean
+          caption: string | null
+          consent: boolean
+          created_at: string
+          id: string
+          image_url: string
+          user_id: string
+        }
+        Insert: {
+          approved?: boolean
+          caption?: string | null
+          consent?: boolean
+          created_at?: string
+          id?: string
+          image_url: string
+          user_id: string
+        }
+        Update: {
+          approved?: boolean
+          caption?: string | null
+          consent?: boolean
+          created_at?: string
+          id?: string
+          image_url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      product_offers: {
+        Row: {
+          active: boolean
+          created_at: string
+          ends_at: string
+          id: string
+          percent: number
+          product_id: string | null
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          ends_at: string
+          id?: string
+          percent: number
+          product_id?: string | null
+          title?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          ends_at?: string
+          id?: string
+          percent?: number
+          product_id?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      product_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          product_id: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          product_id: string
+          rating: number
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           active: boolean

@@ -15,12 +15,14 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-4">
         <Logo />
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+        <nav className="hidden md:flex items-center gap-5 text-sm font-medium">
           <Link to="/" className="hover:text-gold-gradient transition" activeProps={{ className: "text-foreground font-bold" }}>الرئيسية</Link>
           <Link to="/products" className="hover:text-gold-gradient transition">المنتجات</Link>
           <Link to="/try-on" className="flex items-center gap-1 hover:text-gold-gradient transition">
-            <Sparkles className="size-4" /> جرّبها بالذكاء الاصطناعي
+            <Sparkles className="size-4" /> جرّبها بالـ AI
           </Link>
+          <Link to="/customers" className="hover:text-gold-gradient transition">زبايننا</Link>
+          <Link to="/our-story" className="hover:text-gold-gradient transition">قصتنا</Link>
         </nav>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => nav({ to: "/cart" })} aria-label="السلة" className="relative">
