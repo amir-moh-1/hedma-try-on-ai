@@ -130,4 +130,11 @@
   .shadow-luxe {
     box-shadow: 0 20px 50px -20px oklch(0.18 0.02 50 / 0.25);
   }
+  .animate-marquee {
+    animation: marquee 35s linear infinite;
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(50%); }
+  }
 }
