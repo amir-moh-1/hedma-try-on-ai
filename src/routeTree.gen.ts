@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VendorRouteImport } from './routes/vendor'
 import { Route as TryOnRouteImport } from './routes/try-on'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as OurStoryRouteImport } from './routes/our-story'
+import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -31,6 +33,16 @@ const TryOnRoute = TryOnRouteImport.update({
 const ProductsRoute = ProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OurStoryRoute = OurStoryRouteImport.update({
+  id: '/our-story',
+  path: '/our-story',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomersRoute = CustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CartRoute = CartRouteImport.update({
@@ -64,6 +76,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
+  '/customers': typeof CustomersRoute
+  '/our-story': typeof OurStoryRoute
   '/products': typeof ProductsRoute
   '/try-on': typeof TryOnRoute
   '/vendor': typeof VendorRoute
@@ -74,6 +88,8 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
+  '/customers': typeof CustomersRoute
+  '/our-story': typeof OurStoryRoute
   '/products': typeof ProductsRoute
   '/try-on': typeof TryOnRoute
   '/vendor': typeof VendorRoute
@@ -85,6 +101,8 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
+  '/customers': typeof CustomersRoute
+  '/our-story': typeof OurStoryRoute
   '/products': typeof ProductsRoute
   '/try-on': typeof TryOnRoute
   '/vendor': typeof VendorRoute
@@ -97,6 +115,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cart'
+    | '/customers'
+    | '/our-story'
     | '/products'
     | '/try-on'
     | '/vendor'
@@ -107,6 +127,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cart'
+    | '/customers'
+    | '/our-story'
     | '/products'
     | '/try-on'
     | '/vendor'
@@ -117,6 +139,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cart'
+    | '/customers'
+    | '/our-story'
     | '/products'
     | '/try-on'
     | '/vendor'
@@ -128,6 +152,8 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   CartRoute: typeof CartRoute
+  CustomersRoute: typeof CustomersRoute
+  OurStoryRoute: typeof OurStoryRoute
   ProductsRoute: typeof ProductsRoute
   TryOnRoute: typeof TryOnRoute
   VendorRoute: typeof VendorRoute
@@ -155,6 +181,20 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/our-story': {
+      id: '/our-story'
+      path: '/our-story'
+      fullPath: '/our-story'
+      preLoaderRoute: typeof OurStoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customers': {
+      id: '/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof CustomersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cart': {
@@ -200,6 +240,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   CartRoute: CartRoute,
+  CustomersRoute: CustomersRoute,
+  OurStoryRoute: OurStoryRoute,
   ProductsRoute: ProductsRoute,
   TryOnRoute: TryOnRoute,
   VendorRoute: VendorRoute,
@@ -208,3 +250,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
