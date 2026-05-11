@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 import { Sparkles, Truck, ShieldCheck, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CustomerPhotosGrid } from "@/components/CustomerPhotosGrid";
+import { Countdown } from "@/components/Countdown";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -16,9 +18,30 @@ function Home() {
       return data ?? [];
     },
   });
+  const { data: globalOffer } = useQuery({
+    queryKey: ["global-offer"],
+    queryFn: async () => {
+      const { data } = await supabase.from("product_offers")
+        .select("title,percent,ends_at").is("product_id", null).eq("active", true)
+        .gt("ends_at", new Date().toISOString())
+        .order("percent", { ascending: false }).limit(1).maybeSingle();
+      return data;
+    },
+  });
 
   return (
     <div>
+      {globalOffer && (
+        <section className="bg-gradient-to-r from-gold/15 via-gold/5 to-gold/15 border-b">
+          <div className="mx-auto max-w-7xl px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <div className="text-xs uppercase font-bold text-gold-gradient">{globalOffer.title}</div>
+              <div className="font-display text-2xl font-black">خصم {globalOffer.percent}% — لفترة محدودة!</div>
+            </div>
+            <Countdown endsAt={globalOffer.ends_at} />
+          </div>
+        </section>
+      )}
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-gradient-to-bl from-accent/40 via-background to-background" />
