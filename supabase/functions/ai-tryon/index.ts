@@ -1,15 +1,24 @@
 // AI Virtual Try-On using Lovable AI (Nano Banana / Gemini image edit)
+// Supports multiple garments combined onto one person.
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+type Garment = { name: string; image: string };
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   try {
-    const { personImage, garmentImage, garmentName } = await req.json();
-    if (!personImage || !garmentImage) {
-      return new Response(JSON.stringify({ error: "personImage and garmentImage required" }), {
+    const body = await req.json();
+    const personImage: string | undefined = body.personImage;
+    // Backwards compat: single garmentImage/garmentName OR new garments[]
+    let garments: Garment[] = body.garments ?? [];
+    if ((!garments || garments.length === 0) && body.garmentImage) {
+      garments = [{ name: body.garmentName ?? "garment", image: body.garmentImage }];
+    }
+    if (!personImage || garments.length === 0) {
+      return new Response(JSON.stringify({ error: "personImage and at least one garment required" }), {
         status: 400, headers: { ...cors, "Content-Type": "application/json" },
       });
     }
@@ -20,7 +29,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    const prompt = `Take the person from the first image and dress them realistically in the clothing item shown in the second image (${garmentName || "garment"}). Keep the person's face, body shape, pose, and background unchanged. The clothing should fit naturally with realistic fabric, lighting, and shadows. Output a single photorealistic image.`;
+    const garmentList = garments.map((g, i) => `${i + 2}) ${g.name}`).join("\n");
+    const prompt = `Photo 1 is the person. The remaining photos are clothing items to dress the person in:
+${garmentList}
+
+Combine ALL the garments naturally on the same person in a single output image. Layer them realistically (e.g. shirt under jacket, belt over pants). Keep the person's face, body shape, pose, and background unchanged. Use realistic fabric, lighting, and shadows. Output a single photorealistic image.`;
+
+    const content: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
+      { type: "text", text: prompt },
+      { type: "image_url", image_url: { url: personImage } },
+      ...garments.map((g) => ({ type: "image_url" as const, image_url: { url: g.image } })),
+    ];
 
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -28,14 +47,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-image",
         modalities: ["image", "text"],
-        messages: [{
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: personImage } },
-            { type: "image_url", image_url: { url: garmentImage } },
-          ],
-        }],
+        messages: [{ role: "user", content }],
       }),
     });
 
