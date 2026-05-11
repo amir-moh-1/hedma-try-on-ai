@@ -12,6 +12,7 @@ import { CartProvider } from "@/lib/cart";
 import { Header } from "@/components/Header";
 import { PromoBar } from "@/components/PromoBar";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
+import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -97,9 +98,7 @@ function RootComponent() {
             <PromoBar />
             <Header />
             <main className="flex-1"><Outlet /></main>
-            <footer className="border-t mt-16 py-8 text-center text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Hedma هدمة — جميع الحقوق محفوظة
-            </footer>
+            <Footer />
           </div>
           <FloatingWhatsApp />
           <Toaster richColors position="top-center" />
