@@ -10,6 +10,8 @@ import {
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import { Header } from "@/components/Header";
+import { PromoBar } from "@/components/PromoBar";
+import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -92,12 +94,14 @@ function RootComponent() {
       <AuthProvider>
         <CartProvider>
           <div className="min-h-screen flex flex-col">
+            <PromoBar />
             <Header />
             <main className="flex-1"><Outlet /></main>
             <footer className="border-t mt-16 py-8 text-center text-sm text-muted-foreground">
               © {new Date().getFullYear()} Hedma هدمة — جميع الحقوق محفوظة
             </footer>
           </div>
+          <FloatingWhatsApp />
           <Toaster richColors position="top-center" />
         </CartProvider>
       </AuthProvider>
