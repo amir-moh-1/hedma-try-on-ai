@@ -107,7 +107,7 @@ function AdminPanel() {
     await supabase.from("coupons").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["admin-coupons"] });
   };
-  const setRole = async (uid: string, role: "admin"|"vendor"|"customer", on: boolean) => {
+  const setRole = async (uid: string, role: "admin"|"vendor"|"customer"|"delivery", on: boolean) => {
     if (on) await supabase.from("user_roles").insert({ user_id: uid, role });
     else await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", role);
     qc.invalidateQueries({ queryKey: ["admin-profiles"] });
