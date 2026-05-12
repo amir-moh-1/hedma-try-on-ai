@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { formatEGP } from "@/lib/format";
-import { Trash2, Plus, Activity, Users, Tag, Package } from "lucide-react";
+import { Trash2, Plus, Activity, Users, Tag, Package, Settings as SettingsIcon, Truck } from "lucide-react";
+import { ORDER_STATUS_AR } from "@/lib/settings";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
 
@@ -153,7 +155,7 @@ function AdminPanel() {
                     <td className="p-3 font-semibold">{u.username}</td>
                     <td className="p-3">{u.phone ?? "—"}</td>
                     <td className="p-3 flex gap-2 flex-wrap">
-                      {(["admin","vendor","customer"] as const).map((r) => {
+                      {(["admin","vendor","customer","delivery"] as const).map((r) => {
                         const has = u.roles.includes(r);
                         return (
                           <button key={r} onClick={() => setRole(u.id, r, !has)}
