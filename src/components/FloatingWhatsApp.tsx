@@ -1,9 +1,9 @@
 import { MessageCircle } from "lucide-react";
-
-const WHATSAPP = "201229344711";
+import { useSiteSettings } from "@/lib/settings";
 
 export function FloatingWhatsApp() {
-  const url = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(
+  const { whatsapp } = useSiteSettings();
+  const url = `https://wa.me/${whatsapp}?text=${encodeURIComponent(
     "السلام عليكم 👋 محتاج مساعدة من Hedma هدمة"
   )}`;
   return (
