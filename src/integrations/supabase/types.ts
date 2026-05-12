@@ -98,6 +98,57 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          coupon_code: string | null
+          created_at: string
+          customer_address: string | null
+          customer_id: string
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_agent_id: string | null
+          discount: number
+          id: string
+          items: Json
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
+          tracking_note: string | null
+          updated_at: string
+        }
+        Insert: {
+          coupon_code?: string | null
+          created_at?: string
+          customer_address?: string | null
+          customer_id: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_agent_id?: string | null
+          discount?: number
+          id?: string
+          items?: Json
+          status?: Database["public"]["Enums"]["order_status"]
+          total?: number
+          tracking_note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          coupon_code?: string | null
+          created_at?: string
+          customer_address?: string | null
+          customer_id?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_agent_id?: string | null
+          discount?: number
+          id?: string
+          items?: Json
+          status?: Database["public"]["Enums"]["order_status"]
+          total?: number
+          tracking_note?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_offers: {
         Row: {
           active: boolean
@@ -233,6 +284,42 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          address: string | null
+          email: string
+          facebook_url: string | null
+          id: string
+          instagram_url: string | null
+          quick_links: Json
+          tiktok_url: string | null
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          address?: string | null
+          email?: string
+          facebook_url?: string | null
+          id?: string
+          instagram_url?: string | null
+          quick_links?: Json
+          tiktok_url?: string | null
+          updated_at?: string
+          whatsapp?: string
+        }
+        Update: {
+          address?: string | null
+          email?: string
+          facebook_url?: string | null
+          id?: string
+          instagram_url?: string | null
+          quick_links?: Json
+          tiktok_url?: string | null
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -266,6 +353,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "vendor" | "customer" | "delivery"
+      order_status:
+        | "pending"
+        | "approved"
+        | "assigned"
+        | "in_transit"
+        | "delivered"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -394,6 +488,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "vendor", "customer", "delivery"],
+      order_status: [
+        "pending",
+        "approved",
+        "assigned",
+        "in_transit",
+        "delivered",
+        "cancelled",
+      ],
     },
   },
 } as const
