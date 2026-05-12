@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
-export type Role = "admin" | "vendor" | "customer";
+export type Role = "admin" | "vendor" | "customer" | "delivery";
 
 type Profile = { id: string; username: string; phone: string | null; full_name: string | null };
 
@@ -13,6 +13,7 @@ type AuthCtx = {
   roles: Role[];
   isAdmin: boolean;
   isVendor: boolean;
+  isDelivery: boolean;
   loading: boolean;
   signIn: (usernameOrEmail: string, password: string) => Promise<{ error?: string }>;
   signUp: (username: string, password: string, phone?: string) => Promise<{ error?: string }>;
@@ -84,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user, session, profile, roles,
       isAdmin: roles.includes("admin"),
       isVendor: roles.includes("vendor") || roles.includes("admin"),
+      isDelivery: roles.includes("delivery") || roles.includes("admin"),
       loading, signIn, signUp, signOut, refreshRoles,
     }}>{children}</Ctx.Provider>
   );
