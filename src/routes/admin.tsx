@@ -244,3 +244,118 @@ function AdminPanel() {
     </div>
   );
 }
+
+function OrdersTab({ profiles }: { profiles: { id: string; username: string; roles: string[] }[] }) {
+  const qc = useQueryClient();
+  const { data: orders } = useQuery({
+    queryKey: ["admin-orders"],
+    queryFn: async () => {
+      const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    refetchInterval: 15_000,
+  });
+  const agents = profiles.filter((p) => p.roles.includes("delivery") || p.roles.includes("admin"));
+  const update = async (id: string, patch: any) => {
+    const { error } = await supabase.from("orders").update(patch).eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("تم"); qc.invalidateQueries({ queryKey: ["admin-orders"] }); }
+  };
+  return (
+    <div className="space-y-3">
+      {(orders ?? []).length === 0 && (
+        <div className="rounded-2xl border bg-card p-8 text-center text-muted-foreground">لا توجد طلبيات</div>
+      )}
+      {(orders ?? []).map((o: any) => {
+        const items = (o.items as any[]) ?? [];
+        return (
+          <div key={o.id} className="rounded-2xl border bg-card p-4">
+            <div className="flex items-start justify-between flex-wrap gap-2 mb-2">
+              <div>
+                <div className="font-mono text-xs text-muted-foreground">#{o.id.slice(0,8)}</div>
+                <div className="font-bold">{o.customer_name ?? "—"} • {o.customer_phone ?? "—"}</div>
+                <div className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString("ar-EG")}</div>
+              </div>
+              <div className="text-right">
+                <div className="font-display font-bold text-lg">{formatEGP(Number(o.total) - Number(o.discount))}</div>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-accent">{ORDER_STATUS_AR[o.status]}</span>
+              </div>
+            </div>
+            {o.customer_address && <div className="text-xs text-muted-foreground mb-2">📍 {o.customer_address}</div>}
+            <ul className="text-xs text-muted-foreground mb-3">
+              {items.map((i: any, idx: number) => (
+                <li key={idx}>• {i.name} × {i.qty}</li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap gap-2 items-center">
+              <Select value={o.status} onValueChange={(v) => update(o.id, { status: v })}>
+                <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(ORDER_STATUS_AR).map(([k,v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={o.delivery_agent_id ?? "none"} onValueChange={(v) => update(o.id, { delivery_agent_id: v === "none" ? null : v, status: v === "none" ? o.status : "assigned" })}>
+                <SelectTrigger className="w-[200px]"><Truck className="size-3 ml-1" /><SelectValue placeholder="مندوب التوصيل" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— بدون مندوب —</SelectItem>
+                  {agents.map((a) => <SelectItem key={a.id} value={a.id}>{a.username}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SettingsTab() {
+  const qc = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["site-settings-admin"],
+    queryFn: async () => {
+      const { data } = await supabase.from("site_settings").select("*").eq("id", "main").maybeSingle();
+      return data;
+    },
+  });
+  const [form, setForm] = useState<any>(null);
+  useEffect(() => {
+    if (data && !form) setForm({ ...data, quick_links_str: JSON.stringify(data.quick_links ?? [], null, 2) });
+  }, [data, form]);
+  if (!form) return <div className="p-6 text-center">...</div>;
+  const save = async () => {
+    let links: any = [];
+    try { links = JSON.parse(form.quick_links_str); }
+    catch { return toast.error("الروابط السريعة JSON غير صحيح"); }
+    const { error } = await supabase.from("site_settings").update({
+      whatsapp: form.whatsapp, email: form.email,
+      instagram_url: form.instagram_url, facebook_url: form.facebook_url, tiktok_url: form.tiktok_url,
+      address: form.address, quick_links: links,
+    }).eq("id", "main");
+    if (error) return toast.error(error.message);
+    toast.success("تم حفظ الإعدادات");
+    qc.invalidateQueries({ queryKey: ["site-settings"] });
+    qc.invalidateQueries({ queryKey: ["site-settings-admin"] });
+  };
+  const F = (label: string, key: string, placeholder = "") => (
+    <div><Label>{label}</Label><Input value={form[key] ?? ""} placeholder={placeholder} onChange={(e) => setForm({ ...form, [key]: e.target.value })} /></div>
+  );
+  return (
+    <div className="rounded-2xl border bg-card p-6 space-y-4">
+      <h3 className="font-bold flex items-center gap-2"><SettingsIcon className="size-4" /> إعدادات الموقع العامة</h3>
+      <div className="grid md:grid-cols-2 gap-3">
+        {F("رقم الواتساب (مع كود الدولة بدون +)", "whatsapp", "201229344711")}
+        {F("الإيميل", "email", "hedma@example.com")}
+        {F("رابط إنستجرام", "instagram_url", "https://instagram.com/...")}
+        {F("رابط فيسبوك", "facebook_url", "https://facebook.com/...")}
+        {F("رابط تيك توك", "tiktok_url", "https://tiktok.com/@...")}
+        {F("العنوان", "address", "التل الكبير، الإسماعيلية")}
+      </div>
+      <div>
+        <Label>الروابط السريعة (JSON)</Label>
+        <Textarea rows={8} className="font-mono text-xs ltr text-left" value={form.quick_links_str} onChange={(e) => setForm({ ...form, quick_links_str: e.target.value })} />
+        <p className="text-xs text-muted-foreground mt-1">مثال: <code>{`[{"label":"الرئيسية","to":"/"}]`}</code></p>
+      </div>
+      <Button onClick={save} className="gradient-gold text-primary">حفظ التغييرات</Button>
+    </div>
+  );
+}
