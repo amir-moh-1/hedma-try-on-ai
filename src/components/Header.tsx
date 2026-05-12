@@ -3,11 +3,11 @@ import { Logo } from "./Logo";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { Button } from "./ui/button";
-import { ShoppingBag, User, LayoutDashboard, LogOut, Sparkles, Store } from "lucide-react";
+import { ShoppingBag, User, LayoutDashboard, LogOut, Sparkles, Store, Truck, Package } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "./ui/dropdown-menu";
 
 export function Header() {
-  const { user, profile, isAdmin, isVendor, signOut } = useAuth();
+  const { user, profile, isAdmin, isVendor, isDelivery, signOut } = useAuth();
   const { count } = useCart();
   const nav = useNavigate();
 
@@ -45,6 +45,10 @@ export function Header() {
                 {isVendor && (
                   <DropdownMenuItem onClick={() => nav({ to: "/vendor" })}><Store className="size-4 ml-2" /> لوحة التاجر</DropdownMenuItem>
                 )}
+                {isDelivery && (
+                  <DropdownMenuItem onClick={() => nav({ to: "/delivery" })}><Truck className="size-4 ml-2" /> لوحة التوصيل</DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => nav({ to: "/my-orders" })}><Package className="size-4 ml-2" /> طلباتي</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => nav({ to: "/cart" })}><ShoppingBag className="size-4 ml-2" /> سلتي</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()}><LogOut className="size-4 ml-2" /> تسجيل الخروج</DropdownMenuItem>
