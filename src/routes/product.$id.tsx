@@ -149,11 +149,11 @@ function ProductDetail() {
               </div>
             </div>
           )}
-          {p.colors.length > 0 && (
+          {allColors.length > 0 && (
             <div className="mt-5">
               <div className="text-sm font-semibold mb-2">اللون {color && <span className="text-muted-foreground font-normal">({color})</span>}</div>
               <div className="flex flex-wrap gap-2">
-                {p.colors.map((c: string) => {
+                {allColors.map((c: string) => {
                   const sel = color === c;
                   return (
                     <button key={c} onClick={() => setColor(c)} aria-label={c} title={c}
