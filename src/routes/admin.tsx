@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { formatEGP } from "@/lib/format";
-import { Trash2, Plus, Activity, Users, Tag, Package, Settings as SettingsIcon, Truck } from "lucide-react";
+import { Trash2, Plus, Activity, Users, Tag, Package, Settings as SettingsIcon, Truck, Store, Sparkles } from "lucide-react";
 import { ORDER_STATUS_AR } from "@/lib/settings";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
@@ -141,7 +141,9 @@ function AdminPanel() {
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="orders">الطلبيات</TabsTrigger>
           <TabsTrigger value="users">المستخدمين والصلاحيات</TabsTrigger>
+          <TabsTrigger value="merchants">المحلات</TabsTrigger>
           <TabsTrigger value="products">كل المنتجات</TabsTrigger>
+          <TabsTrigger value="presets">الإدخال السريع</TabsTrigger>
           <TabsTrigger value="coupons">العروض والكوبونات</TabsTrigger>
           <TabsTrigger value="settings">إعدادات الموقع</TabsTrigger>
           <TabsTrigger value="activity">سجل النشاط</TabsTrigger>
@@ -149,6 +151,8 @@ function AdminPanel() {
 
         <TabsContent value="orders" className="mt-4"><OrdersTab profiles={profiles ?? []} /></TabsContent>
         <TabsContent value="settings" className="mt-4"><SettingsTab /></TabsContent>
+        <TabsContent value="merchants" className="mt-4"><MerchantsTab profiles={profiles ?? []} /></TabsContent>
+        <TabsContent value="presets" className="mt-4"><PresetsTab /></TabsContent>
 
         <TabsContent value="users" className="mt-4">
           <div className="rounded-2xl border bg-card overflow-x-auto">
@@ -356,6 +360,156 @@ function SettingsTab() {
         <p className="text-xs text-muted-foreground mt-1">مثال: <code>{`[{"label":"الرئيسية","to":"/"}]`}</code></p>
       </div>
       <Button onClick={save} className="gradient-gold text-primary">حفظ التغييرات</Button>
+    </div>
+  );
+}
+
+function MerchantsTab({ profiles }: { profiles: { id: string; username: string; roles: string[] }[] }) {
+  const qc = useQueryClient();
+  const { data: merchants } = useQuery({
+    queryKey: ["admin-merchants"],
+    queryFn: async () => {
+      const { data } = await supabase.from("merchants").select("*").order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  const { data: counts } = useQuery({
+    queryKey: ["merchant-product-counts"],
+    queryFn: async () => {
+      const { data } = await supabase.from("products").select("merchant_id,price,stock");
+      const map = new Map<string, { count: number; stockValue: number }>();
+      (data ?? []).forEach((p) => {
+        if (!p.merchant_id) return;
+        const cur = map.get(p.merchant_id) ?? { count: 0, stockValue: 0 };
+        cur.count += 1;
+        cur.stockValue += Number(p.price) * Number(p.stock ?? 0);
+        map.set(p.merchant_id, cur);
+      });
+      return map;
+    },
+  });
+  const vendors = profiles.filter((p) => p.roles.includes("vendor") || p.roles.includes("admin"));
+  const [form, setForm] = useState({ id: "", shop_name: "", whatsapp: "", location: "", logo_url: "", owner_id: "", active: true });
+  const reset = () => setForm({ id: "", shop_name: "", whatsapp: "", location: "", logo_url: "", owner_id: "", active: true });
+
+  const save = async () => {
+    if (!form.shop_name || !form.owner_id) return toast.error("اسم المحل والمالك مطلوبين");
+    if (form.id) {
+      const { error } = await supabase.from("merchants").update({
+        shop_name: form.shop_name, whatsapp: form.whatsapp, location: form.location,
+        logo_url: form.logo_url, owner_id: form.owner_id, active: form.active,
+      }).eq("id", form.id);
+      if (error) return toast.error(error.message);
+    } else {
+      const { error } = await supabase.from("merchants").insert({
+        shop_name: form.shop_name, whatsapp: form.whatsapp, location: form.location,
+        logo_url: form.logo_url, owner_id: form.owner_id, active: form.active,
+      });
+      if (error) return toast.error(error.message);
+    }
+    toast.success("تم");
+    reset();
+    qc.invalidateQueries({ queryKey: ["admin-merchants"] });
+    qc.invalidateQueries({ queryKey: ["merchants-list"] });
+  };
+  const del = async (id: string) => {
+    if (!confirm("حذف المحل؟")) return;
+    await supabase.from("merchants").delete().eq("id", id);
+    qc.invalidateQueries({ queryKey: ["admin-merchants"] });
+  };
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border bg-card p-5 space-y-3">
+        <h3 className="font-bold flex items-center gap-2"><Store className="size-4" /> {form.id ? "تعديل محل" : "إضافة محل جديد"}</h3>
+        <div className="grid md:grid-cols-2 gap-3">
+          <div><Label>اسم المحل *</Label><Input value={form.shop_name} onChange={(e) => setForm({ ...form, shop_name: e.target.value })} /></div>
+          <div>
+            <Label>المالك (تاجر) *</Label>
+            <Select value={form.owner_id} onValueChange={(v) => setForm({ ...form, owner_id: v })}>
+              <SelectTrigger><SelectValue placeholder="اختر التاجر" /></SelectTrigger>
+              <SelectContent>{vendors.map((v) => <SelectItem key={v.id} value={v.id}>{v.username}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>واتساب المحل</Label><Input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="201xxxxxxxxx" /></div>
+          <div><Label>الموقع</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
+          <div className="md:col-span-2"><Label>رابط اللوجو</Label><Input value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} /></div>
+        </div>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> نشط</label>
+        <div className="flex gap-2">
+          <Button onClick={save} className="gradient-gold text-primary">{form.id ? "حفظ" : "إضافة"}</Button>
+          {form.id && <Button variant="ghost" onClick={reset}>إلغاء</Button>}
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {(merchants ?? []).map((m: any) => {
+          const c = counts?.get(m.id);
+          const owner = profiles.find((p) => p.id === m.owner_id);
+          return (
+            <div key={m.id} className="rounded-2xl border bg-card p-4">
+              <div className="flex items-center gap-3">
+                {m.logo_url ? <img src={m.logo_url} className="size-12 rounded-lg object-cover" alt="" /> : <div className="size-12 rounded-lg bg-muted grid place-items-center"><Store className="size-5" /></div>}
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold line-clamp-1">{m.shop_name}</div>
+                  <div className="text-xs text-muted-foreground">المالك: {owner?.username ?? "—"}</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                <div className="rounded-lg bg-muted/40 p-2"><div className="text-muted-foreground">المنتجات</div><div className="font-bold">{c?.count ?? 0}</div></div>
+                <div className="rounded-lg bg-muted/40 p-2"><div className="text-muted-foreground">قيمة المخزون</div><div className="font-bold">{formatEGP(c?.stockValue ?? 0)}</div></div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <Button size="sm" variant="outline" onClick={() => setForm({ id: m.id, shop_name: m.shop_name, whatsapp: m.whatsapp ?? "", location: m.location ?? "", logo_url: m.logo_url ?? "", owner_id: m.owner_id, active: m.active })}>تعديل</Button>
+                <Button size="sm" variant="destructive" onClick={() => del(m.id)}><Trash2 className="size-3" /></Button>
+              </div>
+            </div>
+          );
+        })}
+        {(merchants ?? []).length === 0 && <div className="col-span-full text-center text-muted-foreground py-10">لا توجد محلات</div>}
+      </div>
+    </div>
+  );
+}
+
+function PresetsTab() {
+  const qc = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["all-presets"],
+    queryFn: async () => {
+      const { data } = await supabase.from("input_presets").select("*");
+      return data ?? [];
+    },
+  });
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (data) {
+      const d: Record<string, string> = {};
+      data.forEach((p: any) => { d[p.id] = (p.values as string[]).join(", "); });
+      setDrafts(d);
+    }
+  }, [data]);
+  const save = async (id: string) => {
+    const values = (drafts[id] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    const { error } = await supabase.from("input_presets").upsert({ id, values: values as never });
+    if (error) return toast.error(error.message);
+    toast.success("تم الحفظ");
+    qc.invalidateQueries({ queryKey: ["preset", id] });
+    qc.invalidateQueries({ queryKey: ["all-presets"] });
+  };
+  const labels: Record<string, string> = { sizes: "المقاسات", colors: "الألوان", categories: "الفئات" };
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border bg-accent/30 p-4 text-sm flex items-start gap-2">
+        <Sparkles className="size-4 mt-0.5" />
+        <div>عدّل القيم اللي هتظهر كأزرار جاهزة في صفحة إضافة المنتج. افصل بين كل قيمة بفاصلة.</div>
+      </div>
+      {["sizes", "colors", "categories"].map((id) => (
+        <div key={id} className="rounded-2xl border bg-card p-4 space-y-2">
+          <Label className="font-bold">{labels[id]}</Label>
+          <Textarea rows={3} value={drafts[id] ?? ""} onChange={(e) => setDrafts({ ...drafts, [id]: e.target.value })} />
+          <Button onClick={() => save(id)} size="sm" className="gradient-gold text-primary">حفظ {labels[id]}</Button>
+        </div>
+      ))}
     </div>
   );
 }

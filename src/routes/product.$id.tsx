@@ -11,16 +11,9 @@ import { ShoppingBag, Sparkles, MapPin, Package, AlertTriangle } from "lucide-re
 import { catAr } from "@/lib/categories";
 import { ProductReviews } from "@/components/ProductReviews";
 import { Countdown } from "@/components/Countdown";
+import { colorHex, type Variant } from "@/lib/presets";
 
 export const Route = createFileRoute("/product/$id")({ component: ProductDetail });
-
-const COLOR_MAP: Record<string, string> = {
-  أسود: "#000", ابيض: "#fff", أبيض: "#fff", أحمر: "#dc2626", احمر: "#dc2626",
-  أزرق: "#2563eb", ازرق: "#2563eb", أخضر: "#16a34a", اخضر: "#16a34a",
-  بني: "#92400e", رمادي: "#6b7280", بيج: "#d4b896", أصفر: "#facc15",
-  وردي: "#ec4899", بنفسجي: "#7c3aed", كحلي: "#1e3a8a",
-};
-const colorHex = (c: string) => COLOR_MAP[c.trim()] ?? "#94a3b8";
 
 function ProductDetail() {
   const { id } = Route.useParams();
@@ -66,14 +59,24 @@ function ProductDetail() {
 
   if (!p) return <div className="mx-auto max-w-7xl p-10 text-center text-muted-foreground">جاري التحميل...</div>;
 
+  const variants: Variant[] = Array.isArray(p.variants) ? (p.variants as Variant[]) : [];
+  const variantColors = variants.map((v) => v.color).filter(Boolean);
+  const allColors = variantColors.length > 0 ? Array.from(new Set([...variantColors, ...p.colors])) : p.colors;
+  const matchedVariant = color ? variants.find((v) => v.color === color) : undefined;
+  const displayImage = matchedVariant?.image_url ?? p.image_url;
+  const galleryImages = Array.from(new Set([
+    ...(p.image_url ? [p.image_url] : []),
+    ...variants.map((v) => v.image_url),
+  ]));
+
   const offerPercent = offer?.percent ?? 0;
   const totalPercent = Math.max(bestPercent, offerPercent);
   const finalPrice = totalPercent > 0 ? Math.round(p.price * (1 - totalPercent / 100)) : p.price;
 
   const handleAdd = () => {
     if (p.sizes.length > 0 && !size) return toast.error("اختر مقاس");
-    if (p.colors.length > 0 && !color) return toast.error("اختر لون");
-    add({ id: p.id, name: p.name, price: finalPrice, image: p.image_url ?? undefined, size, color });
+    if (allColors.length > 0 && !color) return toast.error("اختر لون");
+    add({ id: p.id, name: p.name, price: finalPrice, image: displayImage ?? undefined, size, color });
     logActivity("add_to_cart", { product_id: p.id, name: p.name });
     toast.success("شكراً ليك! ✨ المنتج اتضاف للسلة");
   };
@@ -81,8 +84,24 @@ function ProductDetail() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <div className="grid md:grid-cols-2 gap-10">
-        <div className="rounded-3xl overflow-hidden bg-muted aspect-[4/5] shadow-luxe">
-          {p.image_url && <img src={p.image_url} alt={p.name} className="size-full object-cover" />}
+        <div>
+          <div className="rounded-3xl overflow-hidden bg-muted aspect-[4/5] shadow-luxe">
+            {displayImage && <img src={displayImage} alt={p.name} className="size-full object-cover transition-opacity duration-300" />}
+          </div>
+          {galleryImages.length > 1 && (
+            <div className="mt-3 flex gap-2 overflow-x-auto">
+              {galleryImages.map((img) => {
+                const v = variants.find((x) => x.image_url === img);
+                const sel = displayImage === img;
+                return (
+                  <button key={img} onClick={() => v && setColor(v.color)}
+                    className={`size-16 rounded-lg overflow-hidden border-2 shrink-0 transition ${sel ? "border-foreground" : "border-transparent opacity-70 hover:opacity-100"}`}>
+                    <img src={img} alt="" className="size-full object-cover" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div>
           <div className="text-sm text-muted-foreground mb-2">{catAr(p.category)}</div>
@@ -130,11 +149,11 @@ function ProductDetail() {
               </div>
             </div>
           )}
-          {p.colors.length > 0 && (
+          {allColors.length > 0 && (
             <div className="mt-5">
               <div className="text-sm font-semibold mb-2">اللون {color && <span className="text-muted-foreground font-normal">({color})</span>}</div>
               <div className="flex flex-wrap gap-2">
-                {p.colors.map((c: string) => {
+                {allColors.map((c: string) => {
                   const sel = color === c;
                   return (
                     <button key={c} onClick={() => setColor(c)} aria-label={c} title={c}
