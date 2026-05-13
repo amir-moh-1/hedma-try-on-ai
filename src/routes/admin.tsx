@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { formatEGP } from "@/lib/format";
-import { Trash2, Plus, Activity, Users, Tag, Package, Settings as SettingsIcon, Truck } from "lucide-react";
+import { Trash2, Plus, Activity, Users, Tag, Package, Settings as SettingsIcon, Truck, Store, Sparkles } from "lucide-react";
 import { ORDER_STATUS_AR } from "@/lib/settings";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
