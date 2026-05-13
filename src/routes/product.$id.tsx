@@ -11,16 +11,9 @@ import { ShoppingBag, Sparkles, MapPin, Package, AlertTriangle } from "lucide-re
 import { catAr } from "@/lib/categories";
 import { ProductReviews } from "@/components/ProductReviews";
 import { Countdown } from "@/components/Countdown";
+import { colorHex, type Variant } from "@/lib/presets";
 
 export const Route = createFileRoute("/product/$id")({ component: ProductDetail });
-
-const COLOR_MAP: Record<string, string> = {
-  أسود: "#000", ابيض: "#fff", أبيض: "#fff", أحمر: "#dc2626", احمر: "#dc2626",
-  أزرق: "#2563eb", ازرق: "#2563eb", أخضر: "#16a34a", اخضر: "#16a34a",
-  بني: "#92400e", رمادي: "#6b7280", بيج: "#d4b896", أصفر: "#facc15",
-  وردي: "#ec4899", بنفسجي: "#7c3aed", كحلي: "#1e3a8a",
-};
-const colorHex = (c: string) => COLOR_MAP[c.trim()] ?? "#94a3b8";
 
 function ProductDetail() {
   const { id } = Route.useParams();
