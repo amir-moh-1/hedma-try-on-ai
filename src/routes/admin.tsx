@@ -141,7 +141,9 @@ function AdminPanel() {
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="orders">الطلبيات</TabsTrigger>
           <TabsTrigger value="users">المستخدمين والصلاحيات</TabsTrigger>
+          <TabsTrigger value="merchants">المحلات</TabsTrigger>
           <TabsTrigger value="products">كل المنتجات</TabsTrigger>
+          <TabsTrigger value="presets">الإدخال السريع</TabsTrigger>
           <TabsTrigger value="coupons">العروض والكوبونات</TabsTrigger>
           <TabsTrigger value="settings">إعدادات الموقع</TabsTrigger>
           <TabsTrigger value="activity">سجل النشاط</TabsTrigger>
@@ -149,6 +151,8 @@ function AdminPanel() {
 
         <TabsContent value="orders" className="mt-4"><OrdersTab profiles={profiles ?? []} /></TabsContent>
         <TabsContent value="settings" className="mt-4"><SettingsTab /></TabsContent>
+        <TabsContent value="merchants" className="mt-4"><MerchantsTab profiles={profiles ?? []} /></TabsContent>
+        <TabsContent value="presets" className="mt-4"><PresetsTab /></TabsContent>
 
         <TabsContent value="users" className="mt-4">
           <div className="rounded-2xl border bg-card overflow-x-auto">
