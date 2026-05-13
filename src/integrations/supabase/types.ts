@@ -98,6 +98,60 @@ export type Database = {
         }
         Relationships: []
       }
+      input_presets: {
+        Row: {
+          id: string
+          updated_at: string
+          values: Json
+        }
+        Insert: {
+          id: string
+          updated_at?: string
+          values?: Json
+        }
+        Update: {
+          id?: string
+          updated_at?: string
+          values?: Json
+        }
+        Relationships: []
+      }
+      merchants: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          location: string | null
+          logo_url: string | null
+          owner_id: string
+          shop_name: string
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          location?: string | null
+          logo_url?: string | null
+          owner_id: string
+          shop_name: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          location?: string | null
+          logo_url?: string | null
+          owner_id?: string
+          shop_name?: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           coupon_code: string | null
@@ -216,11 +270,13 @@ export type Database = {
           id: string
           image_url: string | null
           location: string | null
+          merchant_id: string | null
           name: string
           price: number
           sizes: string[]
           stock: number
           updated_at: string
+          variants: Json
           vendor_id: string
         }
         Insert: {
@@ -232,11 +288,13 @@ export type Database = {
           id?: string
           image_url?: string | null
           location?: string | null
+          merchant_id?: string | null
           name: string
           price: number
           sizes?: string[]
           stock?: number
           updated_at?: string
+          variants?: Json
           vendor_id: string
         }
         Update: {
@@ -248,14 +306,24 @@ export type Database = {
           id?: string
           image_url?: string | null
           location?: string | null
+          merchant_id?: string | null
           name?: string
           price?: number
           sizes?: string[]
           stock?: number
           updated_at?: string
+          variants?: Json
           vendor_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
