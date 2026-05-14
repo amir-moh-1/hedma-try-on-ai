@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
@@ -17,8 +17,56 @@ import { Toaster } from "@/components/ui/sonner";
 import { SocialProofPopup } from "@/components/SocialProofPopup";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
+
+function BrandingMeta() {
+  const { data: s } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("site_settings").select("*").eq("id", "main").maybeSingle();
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (!s) return;
+    
+    // Update Title
+    const title = s.slogan ? `Hedma | ${s.slogan}` : "Hedma | هدمة - أناقة عصرية";
+    document.title = title;
+
+    // Update Favicon
+    if (s.logo_url) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = s.logo_url;
+    }
+
+    // Update Meta Tags (OG)
+    const metaTags = {
+      "og:title": title,
+      "og:image": s.logo_url || "",
+      "twitter:title": title,
+      "twitter:image": s.logo_url || "",
+    };
+
+    Object.entries(metaTags).forEach(([prop, val]) => {
+      if (!val) return;
+      const selector = prop.startsWith("og:") ? `meta[property='${prop}']` : `meta[name='${prop}']`;
+      const el = document.querySelector(selector);
+      if (el) el.setAttribute("content", val);
+    });
+  }, [s]);
+
+  return null;
+}
 
 function NotFoundComponent() {
   return (
@@ -98,6 +146,7 @@ function RootComponent() {
       <ThemeProvider defaultTheme="light" storageKey="hedma-theme">
         <AuthProvider>
           <CartProvider>
+            <BrandingMeta />
             <div className="min-h-screen flex flex-col font-sans transition-colors duration-300">
               <PromoBar />
               <Header />

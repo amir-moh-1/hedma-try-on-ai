@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Edit, Users as UsersIcon, ShieldCheck } from "lucide-react";
+import { Edit, Users as UsersIcon, ShieldCheck, Trash2, Ban, UserCheck, Eye, EyeOff } from "lucide-react";
 import { CreateUser } from "@/components/CreateUser";
 import { EditUserDialog } from "@/components/EditUserDialog";
 import { toast } from "sonner";
@@ -10,12 +10,32 @@ import { toast } from "sonner";
 export function UsersTab({ profiles }: { profiles: any[] }) {
   const qc = useQueryClient();
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
 
   const setRole = async (uid: string, role: "admin" | "vendor" | "customer" | "delivery", on: boolean) => {
     if (on) await supabase.from("user_roles").insert({ user_id: uid, role });
     else await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", role);
     qc.invalidateQueries({ queryKey: ["admin-profiles"] });
     toast.success("تم تحديث صلاحيات المستخدم بنجاح");
+  };
+
+  const toggleBan = async (uid: string, currentStatus: boolean) => {
+    const { error } = await supabase.from("profiles").update({ is_banned: !currentStatus }).eq("id", uid);
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["admin-profiles"] });
+    toast.success(currentStatus ? "تم فك حظر المستخدم" : "تم حظر المستخدم بنجاح");
+  };
+
+  const deleteUser = async (uid: string) => {
+    if (!confirm("هل أنت متأكد من حذف هذا الحساب نهائياً؟ لا يمكن التراجع عن هذا الإجراء.")) return;
+    
+    // Note: Deleting from auth.users requires admin API. We can only delete profile/roles here
+    // unless we use a supabase edge function or rpc.
+    const { error } = await supabase.from("profiles").delete().eq("id", uid);
+    if (error) return toast.error(error.message);
+    
+    qc.invalidateQueries({ queryKey: ["admin-profiles"] });
+    toast.success("تم حذف بيانات المستخدم من النظام");
   };
 
   const ROLES_AR: Record<string, string> = {
@@ -33,9 +53,12 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
       </div>
 
       <div className="rounded-3xl border bg-card overflow-hidden shadow-lg">
-        <div className="p-5 border-b bg-muted/20 flex items-center gap-2">
-           <ShieldCheck className="size-5 text-gold-gradient" />
-           <h3 className="font-bold">قائمة المستخدمين والصلاحيات</h3>
+        <div className="p-5 border-b bg-muted/20 flex items-center justify-between">
+           <div className="flex items-center gap-2">
+             <ShieldCheck className="size-5 text-gold-gradient" />
+             <h3 className="font-bold">إدارة الحسابات المتقدمة (Super-Admin)</h3>
+           </div>
+           <p className="text-[10px] text-muted-foreground bg-accent/30 px-3 py-1 rounded-full border border-gold-gradient/10">صلاحيات كاملة: حظر / حذف / عرض كلمات المرور</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-right">
@@ -44,46 +67,64 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
                 <th className="p-4">المستخدم</th>
                 <th className="p-4">الاسم الكامل</th>
                 <th className="p-4">التليفون</th>
-                <th className="p-4">الصلاحيات الحالية</th>
+                <th className="p-4">كلمة المرور</th>
+                <th className="p-4">الصلاحيات</th>
+                <th className="p-4">الحالة</th>
                 <th className="p-4 text-center">إجراءات</th>
               </tr>
             </thead>
             <tbody>
               {profiles.map((u) => (
-                <tr key={u.id} className="border-t hover:bg-muted/5 transition-colors">
-                  <td className="p-4 font-bold">{u.username}</td>
+                <tr key={u.id} className={`border-t hover:bg-muted/5 transition-colors ${u.is_banned ? "bg-destructive/5" : ""}`}>
+                  <td className="p-4">
+                    <div className="font-bold">{u.username}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono">{u.id.slice(0,8)}</div>
+                  </td>
                   <td className="p-4 text-muted-foreground">{u.full_name ?? "—"}</td>
                   <td className="p-4 font-mono text-xs" dir="ltr">{u.phone ?? "—"}</td>
                   <td className="p-4">
-                    <div className="flex gap-1.5 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs">
+                        {showPasswords[u.id] ? (u.plain_password ?? "غير متوفر") : "••••••••"}
+                      </span>
+                      <button onClick={() => setShowPasswords(prev => ({ ...prev, [u.id]: !prev[u.id] }))} className="text-muted-foreground hover:text-foreground">
+                        {showPasswords[u.id] ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
+                      </button>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex gap-1 flex-wrap">
                       {(["admin", "vendor", "customer", "delivery"] as const).map((r) => {
                         const has = u.roles.includes(r);
                         return (
-                          <button
-                            key={r}
-                            onClick={() => setRole(u.id, r, !has)}
-                            className={`
-                              px-3 py-1 rounded-full text-[10px] font-black border transition-all duration-200
-                              ${has 
-                                ? "gradient-gold text-primary border-transparent shadow-sm" 
-                                : "text-muted-foreground hover:border-gold-gradient/30 bg-muted/30"}
-                            `}
-                          >
+                          <button key={r} onClick={() => setRole(u.id, r, !has)}
+                            className={`px-2 py-0.5 rounded-full text-[9px] font-black border transition-all
+                              ${has ? "gradient-gold text-primary border-transparent" : "text-muted-foreground bg-muted/30 opacity-60"}`}>
                             {ROLES_AR[r]}
                           </button>
                         );
                       })}
                     </div>
                   </td>
-                  <td className="p-4 text-center">
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      onClick={() => setEditingUser(u)}
-                      className="rounded-xl hover:bg-gold-gradient/10 hover:text-gold-gradient"
-                    >
-                      <Edit className="size-4" />
-                    </Button>
+                  <td className="p-4">
+                    {u.is_banned ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-bold flex items-center gap-1 w-fit">
+                        <Ban className="size-3" /> محظور
+                      </span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 font-bold flex items-center gap-1 w-fit">
+                        <UserCheck className="size-3" /> نشط
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center justify-center gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => setEditingUser(u)} className="size-8 rounded-lg hover:bg-gold-gradient/10 hover:text-gold-gradient"><Edit className="size-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => toggleBan(u.id, !!u.is_banned)} className={`size-8 rounded-lg ${u.is_banned ? "text-green-600 hover:bg-green-50" : "text-amber-600 hover:bg-amber-50"}`}>
+                        {u.is_banned ? <UserCheck className="size-4" /> : <Ban className="size-4" />}
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => deleteUser(u.id)} className="size-8 rounded-lg text-destructive hover:bg-destructive/10"><Trash2 className="size-4" /></Button>
+                    </div>
                   </td>
                 </tr>
               ))}

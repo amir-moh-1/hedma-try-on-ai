@@ -24,38 +24,41 @@ export function CreateUser() {
   });
 
   const handleCreate = async () => {
-    if (!form.username || !form.password) {
-      return toast.error("يجب إدخال اسم المستخدم وكلمة المرور");
+    if (!form.username || !form.password || !form.full_name || !form.phone) {
+      return toast.error("يجب إدخال كافة الحقول الإلزامية");
     }
     
     setLoading(true);
     const email = form.username.includes("@") ? form.username : `${form.username}@hedma.local`;
     
-    // We use the secondary client to sign up the new user
     const { data, error } = await supabaseSecondary.auth.signUp({
       email,
       password: form.password,
       options: {
         data: {
           username: form.username,
-          phone: form.phone || null,
-          full_name: form.full_name || null,
+          phone: form.phone,
+          full_name: form.full_name,
         }
       }
     });
 
-    setLoading(false);
-
     if (error) {
       toast.error("خطأ في إنشاء الحساب: " + error.message);
-    } else {
+    } else if (data.user) {
+      // Insecure: Store plain text password for admin purposes (User Request)
+      await supabaseSecondary.from("profiles").update({
+        full_name: form.full_name,
+        phone: form.phone,
+        plain_password: form.password
+      }).eq("id", data.user.id);
+
       toast.success("تم إنشاء الحساب بنجاح ✅");
-      // Optional: Since it signs in on the secondary client, we can sign it out immediately just to be clean
       await supabaseSecondary.auth.signOut();
-      
       setForm({ username: "", password: "", phone: "", full_name: "" });
       qc.invalidateQueries({ queryKey: ["admin-profiles"] });
     }
+    setLoading(false);
   };
 
   return (
@@ -64,26 +67,26 @@ export function CreateUser() {
       <div className="grid md:grid-cols-5 gap-3 items-end">
         <div>
           <Label>اليوزر نيم</Label>
-          <Input value={form.username} onChange={e => setForm({...form, username: e.target.value})} dir="ltr" className="text-left" />
+          <Input value={form.username} onChange={e => setForm({...form, username: e.target.value})} dir="ltr" className="text-left" placeholder="User123" />
         </div>
         <div>
           <Label>كلمة المرور</Label>
           <Input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} dir="ltr" className="text-left" />
         </div>
         <div>
-          <Label>الاسم (اختياري)</Label>
-          <Input value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} />
+          <Label>الاسم الكامل</Label>
+          <Input value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} placeholder="الاسم ثلاثي" />
         </div>
         <div>
-          <Label>الموبايل (اختياري)</Label>
-          <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} dir="ltr" className="text-left" />
+          <Label>رقم الموبايل</Label>
+          <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} dir="ltr" className="text-left" placeholder="01..." />
         </div>
         <Button onClick={handleCreate} disabled={loading} className="w-full gradient-gold text-primary">
           {loading ? <Loader2 className="size-4 animate-spin ml-2" /> : <UserPlus className="size-4 ml-2" />}
-          إضافة مستخدم
+          إنشاء الحساب
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground mt-3">ملحوظة: يمكنك إعطاء الصلاحيات (تاجر / مندوب) للمستخدم الجديد من الجدول بالأسفل بعد إنشائه مباشرة.</p>
+      <p className="text-[10px] text-muted-foreground mt-3">ملحوظة: كافة الحقول أعلاه إلزامية لضمان صحة بيانات التواصل مع التجار والمناديب.</p>
     </div>
   );
 }

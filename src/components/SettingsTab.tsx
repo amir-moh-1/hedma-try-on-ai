@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Globe, Save } from "lucide-react";
+import { Globe, Save, Upload, Loader2, Image as ImageIcon } from "lucide-react";
 
 export function SettingsTab() {
   const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
   const { data } = useQuery({
     queryKey: ["site-settings-admin"],
     queryFn: async () => {
@@ -30,6 +33,35 @@ export function SettingsTab() {
   }, [data, form]);
 
   if (!form) return <div className="p-20 text-center text-muted-foreground animate-pulse">جاري تحميل الإعدادات...</div>;
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) return toast.error("يرجى اختيار ملف صورة صالح");
+    if (file.size > 2 * 1024 * 1024) return toast.error("حجم الصورة يجب أن لا يتعدى 2MB");
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `branding/logo-${Date.now()}.${ext}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("branding")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from("branding").getPublicUrl(path);
+      
+      setForm({ ...form, logo_url: publicUrl });
+      toast.success("تم رفع اللوجو بنجاح ✨");
+    } catch (err: any) {
+      toast.error("فشل رفع اللوجو: " + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const save = async () => {
     let links: any = [];
@@ -84,14 +116,55 @@ export function SettingsTab() {
             <Globe className="size-6 text-gold-gradient" />
           </div>
           <div>
-            <h3 className="font-bold text-2xl">إعدادات الموقع العامة</h3>
-            <p className="text-sm text-muted-foreground">تحكم في كافة بيانات التواصل والروابط الخارجية للمنصة</p>
+            <h3 className="font-bold text-2xl">إعدادات الهوية البصرية (Branding)</h3>
+            <p className="text-sm text-muted-foreground">تحكم في اللوجو، الشعار، والبيانات العامة للموقع</p>
           </div>
         </div>
 
+        <div className="space-y-6 mb-10 border-b pb-8">
+           <div className="flex flex-col md:flex-row items-start gap-8">
+              <div className="space-y-4 flex-1">
+                <Label className="text-sm font-bold">لوجو الموقع (الرئيسي)</Label>
+                <div className="flex items-center gap-3">
+                  <Input 
+                    className="rounded-xl h-11 bg-muted/5 font-mono text-xs" 
+                    value={form.logo_url ?? ""} 
+                    readOnly 
+                    placeholder="رابط اللوجو سيظهر هنا..."
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                    className="h-11 px-6 rounded-xl border-gold-gradient/20 hover:bg-gold-gradient/10 shrink-0"
+                  >
+                    {uploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4 ml-2" />}
+                    رفع ملف
+                  </Button>
+                  <input type="file" ref={fileRef} hidden accept="image/*" onChange={handleFileUpload} />
+                </div>
+                <p className="text-[10px] text-muted-foreground">يفضل استخدام صورة شفافة (PNG) بأبعاد مربعة أو مستطيلة بنسبة 1:1 أو 3:1.</p>
+              </div>
+
+              <div className="size-32 rounded-3xl border-2 border-dashed border-gold-gradient/20 grid place-items-center bg-muted/5 overflow-hidden shrink-0">
+                {form.logo_url ? (
+                  <img src={form.logo_url} className="size-full object-contain p-2" alt="Preview" />
+                ) : (
+                  <ImageIcon className="size-8 text-muted-foreground/30" />
+                )}
+              </div>
+           </div>
+
+           <div className="grid md:grid-cols-2 gap-6">
+              {F("الشعار اللفظي (Slogan)", "slogan", "أناقتك تبدأ من هنا")}
+              <div className="p-4 rounded-2xl bg-gold-gradient/5 border border-gold-gradient/10 text-[11px] leading-relaxed">
+                 ℹ️ <strong>ملاحظة:</strong> الشعار اللفظي سيظهر تحت اللوجو في الهيدر والفوتر بوضوح ويدعم اللغة العربية تماماً.
+              </div>
+           </div>
+        </div>
+
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {F("رابط اللوجو (Logo URL)", "logo_url", "https://...")}
-          {F("الشعار اللفظي (Slogan)", "slogan", "أناقتك تبدأ من هنا")}
           {F("رقم الواتساب (مع كود الدولة بدون +)", "whatsapp", "201229344711")}
           {F("البريد الإلكتروني الرسمي", "email", "hedma@example.com")}
           {F("رابط إنستجرام", "instagram_url", "https://instagram.com/...")}
@@ -100,6 +173,7 @@ export function SettingsTab() {
           {F("العنوان الفعلي", "address", "التل الكبير، الإسماعيلية")}
         </div>
 
+        {/* ... Rest of the component (Marquee, Social Proof, etc.) ... */}
         <div className="grid md:grid-cols-2 gap-6 mb-8 border-t pt-8">
           <div className="space-y-4">
             <h4 className="font-bold text-lg flex items-center gap-2">📢 الشريط المتحرك (Marquee)</h4>
@@ -147,9 +221,6 @@ export function SettingsTab() {
             value={form.quick_links_str} 
             onChange={(e) => setForm({ ...form, quick_links_str: e.target.value })} 
           />
-          <div className="p-4 rounded-xl bg-accent/30 text-xs text-muted-foreground flex items-start gap-2 leading-relaxed">
-             💡 <strong>تلميح:</strong> هذا الحقل مخصص للمبرمجين. تأكد من أن التنسيق عبارة عن قائمة من الأجسام التي تحتوي على <code>label</code> و <code>to</code>.
-          </div>
         </div>
 
         <Button onClick={save} className="gradient-gold text-primary rounded-xl px-10 font-bold h-12 shadow-lg shadow-gold-gradient/10 w-full md:w-auto">

