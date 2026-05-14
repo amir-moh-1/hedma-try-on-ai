@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { formatEGP } from "@/lib/format";
-import { Plus, Trash2, Edit2, Save, X, Upload } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, X, Upload, Copy, Wand2 } from "lucide-react";
 import { usePreset, colorHex, type Variant } from "@/lib/presets";
+import { BulkImporter } from "@/components/vendor/BulkImporter";
 
 export const Route = createFileRoute("/vendor")({ component: VendorPanel });
 
@@ -34,6 +35,7 @@ function VendorPanel() {
   const [form, setForm] = useState({ ...empty });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [smartInput, setSmartInput] = useState("");
 
   useEffect(() => {
     if (!loading && (!user || !isVendor)) nav({ to: "/auth" });
@@ -95,8 +97,55 @@ function VendorPanel() {
       logActivity("product_create", { name: form.name });
       toast.success("تم الإضافة");
     }
-    reset();
     qc.invalidateQueries({ queryKey: ["vendor-products"] });
+    // Reset but keep some fields if we want, for now full reset is fine unless duplicate is clicked
+    reset();
+  };
+
+  const parseSmartInput = () => {
+    if (!smartInput) return;
+    const parts = smartInput.split("|").map(p => p.trim());
+    let newForm = { ...form };
+    
+    parts.forEach(part => {
+      if (part.includes("التاجر:")) {
+        const mName = part.split(":")[1].trim();
+        const m = merchants.find(x => x.shop_name.includes(mName));
+        if (m) newForm.merchant_id = m.id;
+      }
+      if (part.includes("اللون:")) {
+        const cText = part.split(":")[1].trim();
+        newForm.colors = Array.from(new Set([...newForm.colors, ...cText.split(",").map(c => c.trim())]));
+      }
+      if (part.includes("المقاس:")) {
+        const sText = part.split(":")[1].trim();
+        newForm.sizes = Array.from(new Set([...newForm.sizes, ...sText.split(",").map(c => c.trim())]));
+      }
+      if (part.includes("السعر:")) {
+        newForm.price = parseInt(part.split(":")[1].trim()) || newForm.price;
+      }
+      if (part.includes("الاسم:")) {
+        newForm.name = part.split(":")[1].trim();
+      }
+    });
+    
+    setForm(newForm);
+    setSmartInput("");
+    toast.success("تم تحليل النص السريع وتفريغه في الحقول ✨");
+  };
+
+  const duplicate = () => {
+    if (!form.name) return toast.error("لا توجد بيانات لنسخها");
+    setEditingId(null); // Clear editing state to ensure it's a new insert
+    // Keep everything but clear image and variants as we usually upload new images for a new product
+    setForm(prev => ({
+      ...prev,
+      name: `${prev.name} (نسخة)`,
+      image_url: "",
+      variants: []
+    }));
+    toast.success("تم نسخ البيانات، أضف الصور الجديدة واضغط حفظ");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const edit = (p: ProductRow) => {
@@ -158,10 +207,24 @@ function VendorPanel() {
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-lg flex items-center gap-2">
             {editingId ? <Edit2 className="size-4" /> : <Plus className="size-4" />}
-            {editingId ? "تعديل منتج" : "إضافة منتج جديد"}
+            {editingId ? "تعديل منتج" : "إضافة منتج يدوياً"}
           </h2>
           {editingId && <Button variant="ghost" size="sm" onClick={reset}><X className="size-4 ml-1" /> إلغاء</Button>}
         </div>
+
+        {!editingId && (
+          <div className="bg-muted/30 p-4 rounded-xl border border-dashed mb-4">
+            <Label className="flex items-center gap-2 mb-2 font-bold"><Wand2 className="size-4 text-gold-gradient" /> الإدخال السريع (Smart Text)</Label>
+            <div className="flex gap-2">
+              <Input 
+                value={smartInput} 
+                onChange={(e) => setSmartInput(e.target.value)} 
+                placeholder="الاسم: تيشيرت صيفي | التاجر: السنباطي | اللون: أحمر, أزرق | المقاس: M, L | السعر: 450" 
+              />
+              <Button onClick={parseSmartInput} variant="outline" className="shrink-0 text-primary gradient-gold">تحليل النص</Button>
+            </div>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-2 gap-4">
           <div>
@@ -258,8 +321,17 @@ function VendorPanel() {
           متاح للبيع
         </label>
 
-        <Button onClick={save} className="gradient-gold text-primary"><Save className="size-4 ml-1" /> {editingId ? "حفظ التعديلات" : "إضافة المنتج"}</Button>
+        <div className="flex flex-wrap gap-2 mt-4">
+          <Button onClick={save} className="gradient-gold text-primary flex-1"><Save className="size-4 ml-1" /> {editingId ? "حفظ التعديلات" : "إضافة المنتج"}</Button>
+          {!editingId && (
+            <Button onClick={duplicate} variant="outline" className="flex-1 border-primary/20 text-primary">
+              <Copy className="size-4 ml-1" /> تكرار البيانات للمنتج التالي
+            </Button>
+          )}
+        </div>
       </div>
+
+      {!editingId && <BulkImporter user={user} merchants={merchants} onSuccess={() => qc.invalidateQueries({ queryKey: ["vendor-products"] })} />}
 
       <h2 className="font-bold text-lg mb-3">{isAdmin ? "كل المنتجات" : "منتجاتي"}</h2>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

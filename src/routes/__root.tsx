@@ -14,6 +14,8 @@ import { PromoBar } from "@/components/PromoBar";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/ui/sonner";
+import { SocialProofPopup } from "@/components/SocialProofPopup";
+import { NotificationPrompt } from "@/components/NotificationPrompt";
 
 import appCss from "../styles.css?url";
 
@@ -101,6 +103,8 @@ function RootComponent() {
             <Footer />
           </div>
           <FloatingWhatsApp />
+          <SocialProofPopup />
+          <NotificationPrompt />
           <Toaster richColors position="top-center" />
         </CartProvider>
       </AuthProvider>

@@ -11,8 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { formatEGP } from "@/lib/format";
-import { Trash2, Plus, Activity, Users, Tag, Package, Settings as SettingsIcon, Truck, Store, Sparkles } from "lucide-react";
+import { Trash2, Plus, Activity, Users, Tag, Package, Settings as SettingsIcon, Truck, Store, Sparkles, FileText } from "lucide-react";
 import { ORDER_STATUS_AR } from "@/lib/settings";
+import { OffersManager } from "@/components/OffersManager";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
 
@@ -225,6 +228,8 @@ function AdminPanel() {
               </tbody>
             </table>
           </div>
+          
+          <OffersManager />
         </TabsContent>
 
         <TabsContent value="activity" className="mt-4">
@@ -260,9 +265,70 @@ function OrdersTab({ profiles }: { profiles: { id: string; username: string; rol
     refetchInterval: 15_000,
   });
   const agents = profiles.filter((p) => p.roles.includes("delivery") || p.roles.includes("admin"));
-  const update = async (id: string, patch: any) => {
+  
+  const update = async (id: string, patch: any, oldStatus: string, items: any[]) => {
+    if (patch.status && (patch.status === "in_transit" || patch.status === "delivered") && 
+        (oldStatus === "pending" || oldStatus === "approved" || oldStatus === "assigned")) {
+      // Deduct stock
+      for (const item of items) {
+        const { data: p } = await supabase.from("products").select("stock").eq("id", item.id).single();
+        if (p && p.stock >= item.qty) {
+          await supabase.from("products").update({ stock: p.stock - item.qty }).eq("id", item.id);
+        }
+      }
+      toast.info("تم خصم الكميات من المخزون بنجاح");
+    }
+  
     const { error } = await supabase.from("orders").update(patch).eq("id", id);
-    if (error) toast.error(error.message); else { toast.success("تم"); qc.invalidateQueries({ queryKey: ["admin-orders"] }); }
+    if (error) toast.error(error.message); else { toast.success("تم تحديث الطلب"); qc.invalidateQueries({ queryKey: ["admin-orders"] }); qc.invalidateQueries({ queryKey: ["admin-products"] }); }
+  };
+
+  const generateInvoice = (order: any) => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    
+    // Add simple font configuration for Arabic if needed (requires custom font usually, using fallback here)
+    doc.setFontSize(22);
+    doc.text("HEDMA - Invoice", 105, 20, { align: "center" });
+    
+    doc.setFontSize(12);
+    doc.text(`Order ID: #${order.id.slice(0, 8)}`, 20, 40);
+    doc.text(`Date: ${new Date(order.created_at).toLocaleString("en-GB")}`, 20, 48);
+    doc.text(`Customer: ${order.customer_name || "-"}`, 20, 56);
+    doc.text(`Phone: ${order.customer_phone || "-"}`, 20, 64);
+    doc.text(`Address: ${order.customer_address || "-"}`, 20, 72);
+    
+    const items = (order.items as any[]) ?? [];
+    const tableData = items.map(item => [
+      item.name, 
+      item.size || "-", 
+      item.color || "-", 
+      item.qty.toString(), 
+      formatEGP(item.price), 
+      formatEGP(item.price * item.qty)
+    ]);
+    
+    autoTable(doc, {
+      startY: 85,
+      head: [["Product", "Size", "Color", "Qty", "Unit Price", "Total"]],
+      body: tableData,
+      theme: "grid",
+      headStyles: { fillColor: [41, 41, 41] }
+    });
+    
+    const finalY = (doc as any).lastAutoTable.finalY || 100;
+    
+    doc.setFontSize(14);
+    if (order.discount > 0) {
+      doc.text(`Discount: ${formatEGP(order.discount)}`, 140, finalY + 10);
+      doc.text(`Final Total: ${formatEGP(order.total - order.discount)}`, 140, finalY + 18);
+    } else {
+      doc.text(`Total: ${formatEGP(order.total)}`, 140, finalY + 10);
+    }
+    
+    doc.setFontSize(10);
+    doc.text("Thank you for shopping with Hedma!", 105, 280, { align: "center" });
+    
+    doc.save(`invoice_hedma_${order.id.slice(0, 8)}.pdf`);
   };
   return (
     <div className="space-y-3">
@@ -279,9 +345,14 @@ function OrdersTab({ profiles }: { profiles: { id: string; username: string; rol
                 <div className="font-bold">{o.customer_name ?? "—"} • {o.customer_phone ?? "—"}</div>
                 <div className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString("ar-EG")}</div>
               </div>
-              <div className="text-right">
-                <div className="font-display font-bold text-lg">{formatEGP(Number(o.total) - Number(o.discount))}</div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-accent">{ORDER_STATUS_AR[o.status]}</span>
+              <div className="text-right flex flex-col items-end gap-2">
+                <div>
+                  <div className="font-display font-bold text-lg">{formatEGP(Number(o.total) - Number(o.discount))}</div>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-accent">{ORDER_STATUS_AR[o.status as keyof typeof ORDER_STATUS_AR]}</span>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => generateInvoice(o)} className="h-7 text-xs">
+                  <FileText className="size-3 ml-1" /> PDF فاتورة
+                </Button>
               </div>
             </div>
             {o.customer_address && <div className="text-xs text-muted-foreground mb-2">📍 {o.customer_address}</div>}
@@ -290,14 +361,14 @@ function OrdersTab({ profiles }: { profiles: { id: string; username: string; rol
                 <li key={idx}>• {i.name} × {i.qty}</li>
               ))}
             </ul>
-            <div className="flex flex-wrap gap-2 items-center">
-              <Select value={o.status} onValueChange={(v) => update(o.id, { status: v })}>
+            <div className="flex flex-wrap gap-2 items-center mt-3 border-t pt-3">
+              <Select value={o.status} onValueChange={(v) => update(o.id, { status: v }, o.status, items)}>
                 <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(ORDER_STATUS_AR).map(([k,v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select value={o.delivery_agent_id ?? "none"} onValueChange={(v) => update(o.id, { delivery_agent_id: v === "none" ? null : v, status: v === "none" ? o.status : "assigned" })}>
+              <Select value={o.delivery_agent_id ?? "none"} onValueChange={(v) => update(o.id, { delivery_agent_id: v === "none" ? null : v, status: v === "none" ? o.status : "assigned" }, o.status, items)}>
                 <SelectTrigger className="w-[200px]"><Truck className="size-3 ml-1" /><SelectValue placeholder="مندوب التوصيل" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">— بدون مندوب —</SelectItem>

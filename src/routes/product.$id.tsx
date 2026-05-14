@@ -11,6 +11,7 @@ import { ShoppingBag, Sparkles, MapPin, Package, AlertTriangle } from "lucide-re
 import { catAr } from "@/lib/categories";
 import { ProductReviews } from "@/components/ProductReviews";
 import { Countdown } from "@/components/Countdown";
+import { RelatedProducts } from "@/components/RelatedProducts";
 import { colorHex, type Variant } from "@/lib/presets";
 
 export const Route = createFileRoute("/product/$id")({ component: ProductDetail });
@@ -86,7 +87,7 @@ function ProductDetail() {
       <div className="grid md:grid-cols-2 gap-10">
         <div>
           <div className="rounded-3xl overflow-hidden bg-muted aspect-[4/5] shadow-luxe">
-            {displayImage && <img src={displayImage} alt={p.name} className="size-full object-cover transition-opacity duration-300" />}
+            {displayImage && <img src={displayImage} alt={p.name} loading="lazy" className="size-full object-cover transition-opacity duration-300" />}
           </div>
           {galleryImages.length > 1 && (
             <div className="mt-3 flex gap-2 overflow-x-auto">
@@ -96,7 +97,7 @@ function ProductDetail() {
                 return (
                   <button key={img} onClick={() => v && setColor(v.color)}
                     className={`size-16 rounded-lg overflow-hidden border-2 shrink-0 transition ${sel ? "border-foreground" : "border-transparent opacity-70 hover:opacity-100"}`}>
-                    <img src={img} alt="" className="size-full object-cover" />
+                    <img src={img} alt="" loading="lazy" className="size-full object-cover" />
                   </button>
                 );
               })}
@@ -176,6 +177,7 @@ function ProductDetail() {
         </div>
       </div>
 
+      <RelatedProducts currentProductId={p.id} currentCategory={p.category} vendorId={p.vendor_id} />
       <ProductReviews productId={id} />
     </div>
   );

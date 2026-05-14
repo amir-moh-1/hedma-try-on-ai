@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatEGP } from "@/lib/format";
-import { Trash2, Minus, Plus, MessageCircle, Tag } from "lucide-react";
+import { Trash2, Minus, Plus, MessageCircle, Tag, MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({ component: Cart });
@@ -25,7 +25,31 @@ function Cart() {
   const [manualCoupon, setManualCoupon] = useState<Coupon | null>(null);
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [address, setAddress] = useState("");
+  const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const getLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("متصفحك لا يدعم تحديد الموقع");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        setAddress((prev) => prev ? `${prev}\n📍 الإحداثيات: ${mapsLink}` : `📍 الإحداثيات: ${mapsLink}`);
+        setLocating(false);
+        toast.success("تم تحديد الموقع بنجاح");
+      },
+      (error) => {
+        console.error(error);
+        toast.error("فشل في تحديد الموقع، يرجى التأكد من صلاحيات الموقع");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true }
+    );
+  };
 
   const { data: coupons } = useQuery({
     queryKey: ["my-coupons", user?.id],
@@ -156,8 +180,14 @@ function Cart() {
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="01xxxxxxxxx" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">📍 عنوان التوصيل</label>
-              <Textarea rows={2} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="المنطقة والشارع ورقم العمارة" />
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-muted-foreground block">📍 عنوان التوصيل</label>
+                <Button size="sm" variant="ghost" onClick={getLocation} disabled={locating} className="h-6 text-[10px] px-2 text-gold-gradient hover:text-gold-gradient/80">
+                  {locating ? <Loader2 className="size-3 animate-spin ml-1" /> : <MapPin className="size-3 ml-1" />}
+                  مشاركة موقعي (GPS)
+                </Button>
+              </div>
+              <Textarea rows={3} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="المنطقة والشارع ورقم العمارة" />
             </div>
             <div>
               <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1 mb-1">
