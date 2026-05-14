@@ -90,7 +90,7 @@ export function OffersManager() {
               <tr key={o.id} className="border-t">
                 <td className="p-3 font-semibold">{o.title}</td>
                 <td className="p-3">{o.percent}%</td>
-                <td className="p-3">{o.products?.name ?? "الكل"}</td>
+                <td className="p-3">{(o as any).products?.name ?? "الكل"}</td>
                 <td className="p-3" dir="ltr">{new Date(o.ends_at).toLocaleString("ar-EG")}</td>
                 <td className="p-3"><button onClick={() => toggleOffer(o.id, o.active)}>{o.active ? "✅ نشط" : "⏸️ موقوف"}</button></td>
                 <td className="p-3"><Button size="sm" variant="ghost" onClick={() => deleteOffer(o.id)}><Trash2 className="size-3 text-destructive" /></Button></td>
