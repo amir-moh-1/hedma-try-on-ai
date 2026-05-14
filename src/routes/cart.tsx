@@ -64,7 +64,7 @@ function Cart() {
     queryKey: ["my-purchases", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("orders").select("id, items, created_at").eq("customer_id", user?.id).eq("status", "delivered").order("created_at", { ascending: false });
+      const { data } = await supabase.from("orders").select("id, items, created_at").eq("customer_id", user!.id).eq("status", "delivered").order("created_at", { ascending: false });
       return data ?? [];
     },
   });
