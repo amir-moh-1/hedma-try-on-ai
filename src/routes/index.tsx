@@ -8,9 +8,12 @@ import { CustomerPhotosGrid } from "@/components/CustomerPhotosGrid";
 import { Countdown } from "@/components/Countdown";
 import { AuthGate } from "@/components/AuthGate";
 
+import { useSiteSettings } from "@/lib/settings";
+
 export const Route = createFileRoute("/")({ component: Home });
 
 function Home() {
+  const settings = useSiteSettings();
   const { data: products } = useQuery({
     queryKey: ["home-products"],
     queryFn: async () => {
@@ -57,6 +60,11 @@ function Home() {
               <br />
               <span className="text-gold-gradient">بلمسة هدمة</span>
             </h1>
+            {settings?.slogan && (
+              <p className="mt-3 text-xl font-bold text-gold-gradient/80 Arabic-font">
+                {settings.slogan}
+              </p>
+            )}
             <p className="mt-5 text-lg text-muted-foreground max-w-md">
               أحدث صيحات الموضة من تيشيرتات وبناطيل وكوتشيات. شوف اللبس عليك قبل ما تشتري بميزة الذكاء الاصطناعي.
             </p>

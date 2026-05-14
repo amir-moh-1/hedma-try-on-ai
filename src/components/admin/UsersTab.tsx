@@ -6,20 +6,14 @@ import { Edit, Users as UsersIcon, ShieldCheck, Trash2, Ban, UserCheck, Eye, Eye
 import { CreateUser } from "@/components/CreateUser";
 import { EditUserDialog } from "@/components/EditUserDialog";
 import { toast } from "sonner";
+import { useSiteSettings } from "@/lib/settings";
 
 export function UsersTab({ profiles }: { profiles: any[] }) {
   const qc = useQueryClient();
   const [editingUser, setEditingUser] = useState<any>(null);
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
 
-  // Fetch shadow metadata for fallbacks (banned users, passwords)
-  const { data: settings } = useQuery({
-    queryKey: ["site-settings-shadow"],
-    queryFn: async () => {
-      const { data } = await supabase.from("site_settings").select("quick_links").eq("id", "main").maybeSingle();
-      return (data?.quick_links as any)?.__metadata || {};
-    }
-  });
+  const settings = useSiteSettings();
 
   const mergedProfiles = profiles.map(p => ({
     ...p,
@@ -41,12 +35,24 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
     if (error && (error.message.includes("400") || error.message.includes("column"))) {
       // Shadow Storage Fallback
       const { data: s } = await supabase.from("site_settings").select("quick_links").eq("id", "main").maybeSingle();
-      const meta = (s?.quick_links as any)?.__metadata || {};
-      const banned = meta.banned_users || {};
+      
+      let links = [];
+      let meta = {};
+      
+      if (s?.quick_links) {
+        if (Array.isArray(s.quick_links)) {
+          links = s.quick_links;
+        } else {
+          links = (s.quick_links as any).links || [];
+          meta = (s.quick_links as any).__metadata || {};
+        }
+      }
+
+      const banned = (meta as any).banned_users || {};
       
       const { error: shadowError } = await supabase.from("site_settings").update({
         quick_links: {
-          ...(s?.quick_links as any || {}),
+          links: links,
           __metadata: { ...meta, banned_users: { ...banned, [uid]: newStatus } }
         }
       }).eq("id", "main");
@@ -60,7 +66,7 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
     }
     
     qc.invalidateQueries({ queryKey: ["admin-profiles"] });
-    qc.invalidateQueries({ queryKey: ["site-settings-shadow"] });
+    qc.invalidateQueries({ queryKey: ["site-settings"] });
   };
 
   const deleteUser = async (uid: string) => {

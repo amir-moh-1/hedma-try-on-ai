@@ -27,7 +27,7 @@ export function Logo({ size = 32 }: { size?: number }) {
           <span className="text-gold-gradient">ma</span>
         </span>
         {settings?.slogan && (
-          <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[120px] Arabic-font">
+          <span className="text-[10px] text-muted-foreground font-bold Arabic-font">
             {settings.slogan}
           </span>
         )}

@@ -34,8 +34,18 @@ export function useSiteSettings() {
       const { data } = await supabase.from("site_settings").select("*").eq("id", "main").maybeSingle();
       if (!data) return DEFAULTS;
 
-      // Smart Metadata Fallback: merge top-level columns with __metadata inside quick_links
-      const meta = (data.quick_links as any)?.__metadata || {};
+      // Smart Metadata Fallback
+      let meta: any = {};
+      let links: any[] = DEFAULTS.quick_links;
+
+      if (data.quick_links) {
+        if (Array.isArray(data.quick_links)) {
+          links = data.quick_links;
+        } else {
+          links = (data.quick_links as any).links || DEFAULTS.quick_links;
+          meta = (data.quick_links as any).__metadata || {};
+        }
+      }
       
       return {
         whatsapp: data.whatsapp ?? DEFAULTS.whatsapp,
@@ -44,7 +54,7 @@ export function useSiteSettings() {
         facebook_url: data.facebook_url ?? "",
         tiktok_url: data.tiktok_url ?? "",
         address: data.address ?? DEFAULTS.address,
-        quick_links: Array.isArray(data.quick_links) ? (data.quick_links as any) : ((data.quick_links as any)?.links || DEFAULTS.quick_links),
+        quick_links: links,
         // Branding & Extended Settings
         logo_url: (data as any).logo_url || meta.logo_url || "",
         slogan: (data as any).slogan || meta.slogan || "",
@@ -54,6 +64,9 @@ export function useSiteSettings() {
         fast_shipping_text: (data as any).fast_shipping_text || meta.fast_shipping_text || "",
         social_proof_enabled: (data as any).social_proof_enabled ?? meta.social_proof_enabled ?? true,
         social_proof_real_data: (data as any).social_proof_real_data ?? meta.social_proof_real_data ?? false,
+        // Admin shadow data
+        banned_users: meta.banned_users || {},
+        user_passwords: meta.user_passwords || {},
       } as any;
     },
     staleTime: 60_000,
