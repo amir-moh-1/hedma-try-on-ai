@@ -17,19 +17,10 @@ import { Toaster } from "@/components/ui/sonner";
 import { SocialProofPopup } from "@/components/SocialProofPopup";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
-
-import appCss from "../styles.css?url";
+import { useSiteSettings } from "@/lib/settings";
 
 function BrandingMeta() {
-  const { data: s } = useQuery({
-    queryKey: ["site-settings"],
-    queryFn: async () => {
-      const { data } = await supabase.from("site_settings").select("*").eq("id", "main").maybeSingle();
-      return data;
-    },
-  });
+  const s = useSiteSettings();
 
   useEffect(() => {
     if (!s) return;

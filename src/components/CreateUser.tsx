@@ -46,12 +46,26 @@ export function CreateUser() {
     if (error) {
       toast.error("خطأ في إنشاء الحساب: " + error.message);
     } else if (data.user) {
-      // Insecure: Store plain text password for admin purposes (User Request)
-      await supabaseSecondary.from("profiles").update({
+      // Try to update profile directly first
+      const { error: profileError } = await supabaseSecondary.from("profiles").update({
         full_name: form.full_name,
         phone: form.phone,
         plain_password: form.password
-      }).eq("id", data.user.id);
+      } as any).eq("id", data.user.id);
+
+      if (profileError && (profileError.message.includes("400") || profileError.message.includes("column"))) {
+        // Shadow Storage Fallback
+        const { data: s } = await supabaseSecondary.from("site_settings").select("quick_links").eq("id", "main").maybeSingle();
+        const meta = (s?.quick_links as any)?.__metadata || {};
+        const passwords = meta.user_passwords || {};
+        
+        await supabaseSecondary.from("site_settings").update({
+          quick_links: {
+            ...(s?.quick_links as any || {}),
+            __metadata: { ...meta, user_passwords: { ...passwords, [data.user.id]: form.password } }
+          }
+        } as any).eq("id", "main");
+      }
 
       toast.success("تم إنشاء الحساب بنجاح ✅");
       await supabaseSecondary.auth.signOut();

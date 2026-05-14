@@ -33,6 +33,10 @@ export function useSiteSettings() {
     queryFn: async () => {
       const { data } = await supabase.from("site_settings").select("*").eq("id", "main").maybeSingle();
       if (!data) return DEFAULTS;
+
+      // Smart Metadata Fallback: merge top-level columns with __metadata inside quick_links
+      const meta = (data.quick_links as any)?.__metadata || {};
+      
       return {
         whatsapp: data.whatsapp ?? DEFAULTS.whatsapp,
         email: data.email ?? DEFAULTS.email,
@@ -40,8 +44,17 @@ export function useSiteSettings() {
         facebook_url: data.facebook_url ?? "",
         tiktok_url: data.tiktok_url ?? "",
         address: data.address ?? DEFAULTS.address,
-        quick_links: Array.isArray(data.quick_links) ? (data.quick_links as any) : DEFAULTS.quick_links,
-      } as SiteSettings;
+        quick_links: Array.isArray(data.quick_links) ? (data.quick_links as any) : ((data.quick_links as any)?.links || DEFAULTS.quick_links),
+        // Branding & Extended Settings
+        logo_url: (data as any).logo_url || meta.logo_url || "",
+        slogan: (data as any).slogan || meta.slogan || "",
+        marquee_text: (data as any).marquee_text || meta.marquee_text || "",
+        marquee_visible: (data as any).marquee_visible ?? meta.marquee_visible ?? true,
+        shipping_text: (data as any).shipping_text || meta.shipping_text || "",
+        fast_shipping_text: (data as any).fast_shipping_text || meta.fast_shipping_text || "",
+        social_proof_enabled: (data as any).social_proof_enabled ?? meta.social_proof_enabled ?? true,
+        social_proof_real_data: (data as any).social_proof_real_data ?? meta.social_proof_real_data ?? false,
+      } as any;
     },
     staleTime: 60_000,
   });

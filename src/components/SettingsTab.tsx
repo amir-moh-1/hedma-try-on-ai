@@ -25,9 +25,20 @@ export function SettingsTab() {
 
   useEffect(() => {
     if (data && !form) {
+      const meta = (data.quick_links as any)?.__metadata || {};
+      const links = Array.isArray(data.quick_links) ? data.quick_links : ((data.quick_links as any)?.links || []);
+      
       setForm({ 
         ...data, 
-        quick_links_str: JSON.stringify(data.quick_links ?? [], null, 2) 
+        logo_url: (data as any).logo_url || meta.logo_url || "",
+        slogan: (data as any).slogan || meta.slogan || "",
+        marquee_text: (data as any).marquee_text || meta.marquee_text || "",
+        marquee_visible: (data as any).marquee_visible ?? meta.marquee_visible ?? true,
+        shipping_text: (data as any).shipping_text || meta.shipping_text || "",
+        fast_shipping_text: (data as any).fast_shipping_text || meta.fast_shipping_text || "",
+        social_proof_enabled: (data as any).social_proof_enabled ?? meta.social_proof_enabled ?? true,
+        social_proof_real_data: (data as any).social_proof_real_data ?? meta.social_proof_real_data ?? false,
+        quick_links_str: JSON.stringify(links, null, 2) 
       });
     }
   }, [data, form]);
@@ -71,23 +82,7 @@ export function SettingsTab() {
       return toast.error("الروابط السريعة JSON غير صحيح، يرجى مراجعة التنسيق"); 
     }
 
-    // Prepare core update (columns that are likely to exist)
-    const coreUpdate: any = {
-      whatsapp: form.whatsapp, 
-      email: form.email,
-      instagram_url: form.instagram_url, 
-      facebook_url: form.facebook_url, 
-      tiktok_url: form.tiktok_url,
-      address: form.address, 
-      quick_links: links,
-    };
-
-    // Try to update core first
-    const { error: coreError } = await supabase.from("site_settings").update(coreUpdate).eq("id", "main");
-    if (coreError) return toast.error("خطأ في تحديث البيانات الأساسية: " + coreError.message);
-
-    // Prepare extended update (new columns)
-    const extendedUpdate = {
+    const extendedData = {
       logo_url: form.logo_url,
       slogan: form.slogan,
       marquee_text: form.marquee_text,
@@ -98,18 +93,40 @@ export function SettingsTab() {
       social_proof_real_data: form.social_proof_real_data,
     };
 
-    // Try updating extended fields. If it fails with 400, it means columns are missing.
-    const { error: extError } = await supabase.from("site_settings").update(extendedUpdate).eq("id", "main");
-    
-    if (extError) {
-      if (extError.message.includes("400") || extError.message.includes("column")) {
-         toast.warning("تم حفظ البيانات الأساسية، ولكن يجب تشغيل كود SQL في Supabase لإضافة الحقول الجديدة (Logo, Slogan, etc)");
-         console.warn("Missing columns in site_settings. Run the SQL script provided in the documentation.");
-      } else {
-         toast.error("خطأ في تحديث الحقول الإضافية: " + extError.message);
-      }
-    } else {
+    // Prepare core update
+    const coreUpdate: any = {
+      whatsapp: form.whatsapp, 
+      email: form.email,
+      instagram_url: form.instagram_url, 
+      facebook_url: form.facebook_url, 
+      tiktok_url: form.tiktok_url,
+      address: form.address, 
+      quick_links: links,
+    };
+
+    // Try to update core + extended in one go first
+    const { error: fullError } = await supabase.from("site_settings").update({
+      ...coreUpdate,
+      ...extendedData
+    }).eq("id", "main");
+
+    if (!fullError) {
       toast.success("تم حفظ كافة إعدادات الموقع بنجاح ✨");
+    } else {
+      // If fails with 400, use metadata fallback
+      console.warn("Falling back to metadata storage due to missing columns");
+      const fallbackUpdate = {
+        ...coreUpdate,
+        quick_links: {
+          links: links,
+          __metadata: extendedData
+        }
+      };
+      const { error: fallbackError } = await supabase.from("site_settings").update(fallbackUpdate).eq("id", "main");
+      if (fallbackError) return toast.error("خطأ في الحفظ: " + fallbackError.message);
+      
+      toast.success("تم الحفظ بنجاح (وضع التوافق) ✨");
+      toast.info("ملاحظة: نوصي بتشغيل كود SQL لتحديث قاعدة البيانات للأداء الأمثل.");
     }
 
     qc.invalidateQueries({ queryKey: ["site-settings"] });

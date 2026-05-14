@@ -12,6 +12,21 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
 
+  // Fetch shadow metadata for fallbacks (banned users, passwords)
+  const { data: settings } = useQuery({
+    queryKey: ["site-settings-shadow"],
+    queryFn: async () => {
+      const { data } = await supabase.from("site_settings").select("quick_links").eq("id", "main").maybeSingle();
+      return (data?.quick_links as any)?.__metadata || {};
+    }
+  });
+
+  const mergedProfiles = profiles.map(p => ({
+    ...p,
+    is_banned: p.is_banned || settings?.banned_users?.[p.id] || false,
+    plain_password: p.plain_password || settings?.user_passwords?.[p.id] || null
+  }));
+
   const setRole = async (uid: string, role: "admin" | "vendor" | "customer" | "delivery", on: boolean) => {
     if (on) await supabase.from("user_roles").insert({ user_id: uid, role });
     else await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", role);
@@ -20,23 +35,38 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
   };
 
   const toggleBan = async (uid: string, currentStatus: boolean) => {
-    const { error } = await supabase.from("profiles").update({ is_banned: !currentStatus } as any).eq("id", uid);
-    if (error) {
-      if (error.message.includes("400") || error.message.includes("column")) {
-        return toast.error("يجب إضافة عمود is_banned في جدول profiles أولاً عبر SQL");
-      }
+    const newStatus = !currentStatus;
+    const { error } = await supabase.from("profiles").update({ is_banned: newStatus } as any).eq("id", uid);
+    
+    if (error && (error.message.includes("400") || error.message.includes("column"))) {
+      // Shadow Storage Fallback
+      const { data: s } = await supabase.from("site_settings").select("quick_links").eq("id", "main").maybeSingle();
+      const meta = (s?.quick_links as any)?.__metadata || {};
+      const banned = meta.banned_users || {};
+      
+      const { error: shadowError } = await supabase.from("site_settings").update({
+        quick_links: {
+          ...(s?.quick_links as any || {}),
+          __metadata: { ...meta, banned_users: { ...banned, [uid]: newStatus } }
+        }
+      }).eq("id", "main");
+      
+      if (shadowError) return toast.error("خطأ في الحفظ: " + shadowError.message);
+      toast.success(newStatus ? "تم حظر المستخدم (وضع التوافق)" : "تم فك الحظر (وضع التوافق)");
+    } else if (error) {
       return toast.error(error.message);
+    } else {
+      toast.success(newStatus ? "تم حظر المستخدم بنجاح" : "تم فك حظر المستخدم");
     }
+    
     qc.invalidateQueries({ queryKey: ["admin-profiles"] });
-    toast.success(currentStatus ? "تم فك حظر المستخدم" : "تم حظر المستخدم بنجاح");
+    qc.invalidateQueries({ queryKey: ["site-settings-shadow"] });
   };
 
   const deleteUser = async (uid: string) => {
     if (!confirm("هل أنت متأكد من حذف هذا الحساب نهائياً؟ لا يمكن التراجع عن هذا الإجراء.")) return;
-    
     const { error } = await supabase.from("profiles").delete().eq("id", uid);
     if (error) return toast.error(error.message);
-    
     qc.invalidateQueries({ queryKey: ["admin-profiles"] });
     toast.success("تم حذف بيانات المستخدم من النظام");
   };
@@ -77,7 +107,7 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
               </tr>
             </thead>
             <tbody>
-              {profiles.map((u) => (
+              {mergedProfiles.map((u) => (
                 <tr key={u.id} className={`border-t hover:bg-muted/5 transition-colors ${u.is_banned ? "bg-destructive/5" : ""}`}>
                   <td className="p-4">
                     <div className="font-bold">{u.username}</div>
