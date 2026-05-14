@@ -6,6 +6,7 @@ import { Sparkles, Truck, ShieldCheck, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CustomerPhotosGrid } from "@/components/CustomerPhotosGrid";
 import { Countdown } from "@/components/Countdown";
+import { AuthGate } from "@/components/AuthGate";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -31,6 +32,7 @@ function Home() {
 
   return (
     <div>
+      <AuthGate />
       {globalOffer && (
         <section className="bg-gradient-to-r from-gold/15 via-gold/5 to-gold/15 border-b">
           <div className="mx-auto max-w-7xl px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-4">

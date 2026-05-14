@@ -115,6 +115,9 @@ function TryOn() {
           جرّب اللبس <span className="text-gold-gradient">عليك</span> قبل ما تشتري
         </h1>
         <p className="text-muted-foreground mt-2">ارفع صورتك واختر لحد 4 قطع (تيشيرت + بنطلون + جزمة + إكسسوار) ونوريك الإطلالة كاملة.</p>
+        <div className="mt-4 inline-block bg-gold-gradient/10 border border-gold-gradient/20 rounded-2xl p-4 text-xs md:text-sm font-semibold max-w-2xl mx-auto">
+          💡 <span className="text-primary">"عشان تاخد أفضل استفادة، ياريت ترفع صورتك كاملة بوضوح أو ترفع الجزء اللي عايز تلبسه. ولو حصل خطأ حاول تاني ماتقلقش."</span>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">

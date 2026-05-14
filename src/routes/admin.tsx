@@ -20,6 +20,7 @@ import { UsersTab } from "@/components/admin/UsersTab";
 import { SettingsTab } from "@/components/SettingsTab";
 import { PresetsTab } from "@/components/PresetsTab";
 import { ActivityTab } from "@/components/admin/ActivityTab";
+import { VendorInsightsTab } from "@/components/admin/VendorInsightsTab";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
 
@@ -77,6 +78,7 @@ function AdminPanel() {
               {activeTab === "users" && "المستخدمين والصلاحيات"}
               {activeTab === "customers" && "قاعدة العملاء"}
               {activeTab === "inventory" && "الجرد الذكي"}
+              {activeTab === "vendor-insights" && "تحليل أداء التجار"}
               {activeTab === "coupons" && "العروض والكوبونات"}
               {activeTab === "presets" && "رفع جماعي مسبق"}
               {activeTab === "settings" && "الإعدادات"}
@@ -97,6 +99,7 @@ function AdminPanel() {
           {activeTab === "customers" && <CustomersTab setCouponTab={(u) => { setActiveTab("coupons"); }} />}
           {activeTab === "settings" && <SettingsTab />}
           {activeTab === "site-settings" && <SettingsTab />}
+          {activeTab === "vendor-insights" && <VendorInsightsTab />}
           {activeTab === "presets" && <PresetsTab />}
           
           {activeTab === "users" && (
@@ -173,7 +176,7 @@ function InventoryView({ products }: { products: any[] }) {
   }, {});
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in slide-up duration-500">
       {Object.entries(grouped).map(([vendor, items]: [string, any]) => (
         <div key={vendor} className="rounded-3xl border bg-card overflow-hidden shadow-md">
           <div className="bg-gold-gradient/10 p-5 border-b flex items-center justify-between">
@@ -183,18 +186,46 @@ function InventoryView({ products }: { products: any[] }) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-right">
               <thead>
-                <tr className="bg-muted/20"><th className="p-4">المنتج</th><th className="p-4 text-center">الكمية المتاحة</th><th className="p-4">الحالة</th></tr>
+                <tr className="bg-muted/20">
+                  <th className="p-4">المنتج</th>
+                  <th className="p-4">سعر الجملة</th>
+                  <th className="p-4">سعر البيع</th>
+                  <th className="p-4">الخصم (%)</th>
+                  <th className="p-4 text-center">الكمية المتاحة</th>
+                  <th className="p-4">الربح المتوقع</th>
+                  <th className="p-4">الحالة</th>
+                </tr>
               </thead>
               <tbody>
-                {items.map((p: any) => (
-                  <tr key={p.id} className="border-t">
-                    <td className="p-4 font-semibold">{p.name}</td>
-                    <td className="p-4 text-center">
-                       <span className={`text-lg font-black ${p.stock < 5 ? "text-destructive underline decoration-wavy" : "text-gold-gradient"}`}>{p.stock}</span>
-                    </td>
-                    <td className="p-4">{p.stock === 0 ? "⚠️ نفد تماماً" : p.stock < 5 ? "🚨 مخزون حرج" : "🟢 متوفر"}</td>
-                  </tr>
-                ))}
+                {items.map((p: any) => {
+                  const wholesale = p.variants?.wholesale_price || 0;
+                  const discount = p.variants?.discount_percent || 0;
+                  const profit = (p.price - (p.price * (discount/100))) - wholesale;
+                  
+                  return (
+                    <tr key={p.id} className="border-t hover:bg-muted/5 transition-colors">
+                      <td className="p-4 font-semibold">{p.name}</td>
+                      <td className="p-4 font-mono">{formatEGP(wholesale)}</td>
+                      <td className="p-4 font-mono">{formatEGP(p.price)}</td>
+                      <td className="p-4">
+                        <span className="px-2 py-0.5 bg-destructive/10 text-destructive rounded-full font-bold">{discount}%</span>
+                      </td>
+                      <td className="p-4 text-center">
+                         <span className={`text-lg font-black ${p.stock < 5 ? "text-destructive underline decoration-wavy" : "text-gold-gradient"}`}>{p.stock}</span>
+                      </td>
+                      <td className="p-4 font-bold text-green-600">{formatEGP(profit)}</td>
+                      <td className="p-4">
+                         {p.stock === 0 ? (
+                           <span className="flex items-center gap-1 text-destructive font-bold"><X className="size-3" /> نفد تماماً</span>
+                         ) : p.stock < 5 ? (
+                           <span className="flex items-center gap-1 text-orange-500 font-bold"><Package className="size-3" /> مخزون حرج</span>
+                         ) : (
+                           <span className="text-green-500 font-bold">🟢 متوفر</span>
+                         )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -138,3 +138,17 @@
     to { transform: translateX(50%); }
   }
 }
+
+/* Hide Lovable Branding & Platform Badges */
+[class*="lovable"], 
+[id*="lovable"], 
+.lovable-badge, 
+#lovable-badge,
+a[href*="lovable.dev"],
+button[title*="Lovable"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -9999 !important;
+}

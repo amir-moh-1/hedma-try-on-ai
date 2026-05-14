@@ -19,7 +19,7 @@ function Products() {
     queryKey: ["all-products"],
     queryFn: async () => {
       const { data } = await supabase.from("products")
-        .select("id,name,price,image_url,category,stock")
+        .select("id,name,price,image_url,category,stock,colors,description")
         .eq("active", true).order("created_at", { ascending: false });
       return data ?? [];
     },
@@ -43,11 +43,16 @@ function Products() {
   }, [products]);
   const effectiveMax = maxPrice ?? priceCap;
 
-  const filtered = (products ?? []).filter((p) =>
-    (cat === "all" || p.category === cat) &&
-    p.name.toLowerCase().includes(q.toLowerCase()) &&
-    Number(p.price) <= effectiveMax
-  );
+  const filtered = (products ?? []).filter((p) => {
+    const searchStr = `${p.name} ${p.category} ${p.description || ""} ${p.colors?.join(" ") || ""}`.toLowerCase();
+    const query = q.toLowerCase();
+    
+    return (
+      (cat === "all" || p.category === cat) &&
+      searchStr.includes(query) &&
+      Number(p.price) <= effectiveMax
+    );
+  });
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">

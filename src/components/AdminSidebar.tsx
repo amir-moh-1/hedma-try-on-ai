@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { 
   LayoutDashboard, Package, PlusCircle, UploadCloud, ListOrdered, 
   Store, BrainCircuit, Ticket, Users, Settings, Globe, UserCircle, 
-  LogOut, Menu, X 
+  LogOut, Menu, X, TrendingUp 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
@@ -19,6 +19,7 @@ export function AdminSidebar({ activeTab, setActiveTab }: { activeTab: string, s
     { id: "presets", label: "رفع جماعي", icon: UploadCloud },
     { id: "orders", label: "الطلبيات", icon: ListOrdered },
     { id: "merchants", label: "المحلات", icon: Store },
+    { id: "vendor-insights", label: "تحليل التجار", icon: TrendingUp },
     { id: "inventory", label: "الجرد الذكي", icon: BrainCircuit },
     { id: "coupons", label: "العروض والكوبونات", icon: Ticket },
     { id: "users", label: "المستخدمين والصلاحيات", icon: Users },

@@ -1,11 +1,28 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
 export function PromoBar() {
-  const messages = [
-    "🎉 عرض افتتاح: خصم 20% على أول أوردر — استخدم كود HEDMA20",
-    "🚚 شحن سريع لكل محافظات مصر خلال 48 ساعة",
-    "✨ جرّب اللبس عليك بالذكاء الاصطناعي قبل ما تشتري",
-    "💬 لأي استفسار كلّمنا على واتساب على طول",
-  ];
-  const loop = [...messages, ...messages];
+  const { data: settings } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("site_settings").select("*").eq("id", "main").maybeSingle();
+      return data;
+    },
+  });
+
+  if (settings?.marquee_visible === false) return null;
+
+  const messages = settings?.marquee_text 
+    ? [settings.marquee_text] 
+    : [
+        "🎉 عرض افتتاح: خصم 20% على أول أوردر — استخدم كود HEDMA20",
+        "🚚 شحن سريع لكل محافظات مصر خلال 48 ساعة",
+        "✨ جرّب اللبس عليك بالذكاء الاصطناعي قبل ما تشتري",
+        "💬 لأي استفسار كلّمنا على واتساب على طول",
+      ];
+      
+  const loop = [...messages, ...messages, ...messages, ...messages];
+  
   return (
     <div className="relative overflow-hidden gradient-gold text-primary text-xs md:text-sm font-semibold">
       <div className="flex whitespace-nowrap animate-marquee py-2">

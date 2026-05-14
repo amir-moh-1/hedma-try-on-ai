@@ -47,6 +47,14 @@ export function SettingsTab() {
       tiktok_url: form.tiktok_url,
       address: form.address, 
       quick_links: links,
+      logo_url: form.logo_url,
+      slogan: form.slogan,
+      marquee_text: form.marquee_text,
+      marquee_visible: form.marquee_visible,
+      shipping_text: form.shipping_text,
+      fast_shipping_text: form.fast_shipping_text,
+      social_proof_enabled: form.social_proof_enabled,
+      social_proof_real_data: form.social_proof_real_data,
     }).eq("id", "main");
 
     if (error) return toast.error(error.message);
@@ -82,6 +90,8 @@ export function SettingsTab() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {F("رابط اللوجو (Logo URL)", "logo_url", "https://...")}
+          {F("الشعار اللفظي (Slogan)", "slogan", "أناقتك تبدأ من هنا")}
           {F("رقم الواتساب (مع كود الدولة بدون +)", "whatsapp", "201229344711")}
           {F("البريد الإلكتروني الرسمي", "email", "hedma@example.com")}
           {F("رابط إنستجرام", "instagram_url", "https://instagram.com/...")}
@@ -90,7 +100,46 @@ export function SettingsTab() {
           {F("العنوان الفعلي", "address", "التل الكبير، الإسماعيلية")}
         </div>
 
-        <div className="space-y-3 mb-8">
+        <div className="grid md:grid-cols-2 gap-6 mb-8 border-t pt-8">
+          <div className="space-y-4">
+            <h4 className="font-bold text-lg flex items-center gap-2">📢 الشريط المتحرك (Marquee)</h4>
+            {F("نص الشريط المتحرك", "marquee_text", "شحن سريع لجميع المحافظات 🚚")}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={form.marquee_visible ?? true} 
+                onChange={(e) => setForm({ ...form, marquee_visible: e.target.checked })}
+                className="accent-gold"
+              />
+              <span className="text-sm font-semibold">إظهار الشريط العلوي</span>
+            </label>
+          </div>
+          <div className="space-y-4">
+            <h4 className="font-bold text-lg flex items-center gap-2">✨ نصوص الثقة (Social Proof)</h4>
+            {F("نص الشحن", "shipping_text", "شحن لجميع المحافظات")}
+            {F("نص السرعة", "fast_shipping_text", "شحن سريع وآمن")}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={form.social_proof_enabled ?? true} 
+                onChange={(e) => setForm({ ...form, social_proof_enabled: e.target.checked })}
+                className="accent-gold"
+              />
+              <span className="text-sm font-semibold">تفعيل نافذة "اشترى فلان من.."</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={form.social_proof_real_data ?? false} 
+                onChange={(e) => setForm({ ...form, social_proof_real_data: e.target.checked })}
+                className="accent-gold"
+              />
+              <span className="text-sm font-semibold">استخدام بيانات حقيقية من الطلبات</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="space-y-3 mb-8 border-t pt-8">
           <Label className="text-sm font-bold text-muted-foreground">الروابط السريعة (تنسيق JSON)</Label>
           <Textarea 
             rows={10} 

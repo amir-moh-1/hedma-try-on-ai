@@ -67,7 +67,8 @@ export function OrdersTab({ profiles }: { profiles: { id: string; username: stri
     `).join("");
 
     container.innerHTML = `
-      <div style="border: 2px solid #f3f4f6; padding: 30px; border-radius: 16px;">
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet">
+      <div style="border: 2px solid #f3f4f6; padding: 30px; border-radius: 16px; font-family: 'Cairo', sans-serif;">
         <h1 style="text-align: center; color: #b8860b; font-size: 32px; margin-bottom: 5px; font-weight: 800;">فاتورة هدمة (HEDMA)</h1>
         <p style="text-align: center; color: #666; margin-bottom: 30px;">أناقتك تبدأ من هنا</p>
         
