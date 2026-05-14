@@ -18,6 +18,9 @@ import { SocialProofPopup } from "@/components/SocialProofPopup";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useSiteSettings } from "@/lib/settings";
+import { useEffect } from "react";
+
+import appCss from "../styles.css?url";
 
 function BrandingMeta() {
   const s = useSiteSettings();
