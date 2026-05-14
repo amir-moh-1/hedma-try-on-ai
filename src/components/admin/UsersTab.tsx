@@ -20,8 +20,13 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
   };
 
   const toggleBan = async (uid: string, currentStatus: boolean) => {
-    const { error } = await supabase.from("profiles").update({ is_banned: !currentStatus }).eq("id", uid);
-    if (error) return toast.error(error.message);
+    const { error } = await supabase.from("profiles").update({ is_banned: !currentStatus } as any).eq("id", uid);
+    if (error) {
+      if (error.message.includes("400") || error.message.includes("column")) {
+        return toast.error("يجب إضافة عمود is_banned في جدول profiles أولاً عبر SQL");
+      }
+      return toast.error(error.message);
+    }
     qc.invalidateQueries({ queryKey: ["admin-profiles"] });
     toast.success(currentStatus ? "تم فك حظر المستخدم" : "تم حظر المستخدم بنجاح");
   };
@@ -29,8 +34,6 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
   const deleteUser = async (uid: string) => {
     if (!confirm("هل أنت متأكد من حذف هذا الحساب نهائياً؟ لا يمكن التراجع عن هذا الإجراء.")) return;
     
-    // Note: Deleting from auth.users requires admin API. We can only delete profile/roles here
-    // unless we use a supabase edge function or rpc.
     const { error } = await supabase.from("profiles").delete().eq("id", uid);
     if (error) return toast.error(error.message);
     

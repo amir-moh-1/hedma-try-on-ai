@@ -71,7 +71,8 @@ export function SettingsTab() {
       return toast.error("الروابط السريعة JSON غير صحيح، يرجى مراجعة التنسيق"); 
     }
 
-    const { error } = await supabase.from("site_settings").update({
+    // Prepare core update (columns that are likely to exist)
+    const coreUpdate: any = {
       whatsapp: form.whatsapp, 
       email: form.email,
       instagram_url: form.instagram_url, 
@@ -79,6 +80,14 @@ export function SettingsTab() {
       tiktok_url: form.tiktok_url,
       address: form.address, 
       quick_links: links,
+    };
+
+    // Try to update core first
+    const { error: coreError } = await supabase.from("site_settings").update(coreUpdate).eq("id", "main");
+    if (coreError) return toast.error("خطأ في تحديث البيانات الأساسية: " + coreError.message);
+
+    // Prepare extended update (new columns)
+    const extendedUpdate = {
       logo_url: form.logo_url,
       slogan: form.slogan,
       marquee_text: form.marquee_text,
@@ -87,11 +96,22 @@ export function SettingsTab() {
       fast_shipping_text: form.fast_shipping_text,
       social_proof_enabled: form.social_proof_enabled,
       social_proof_real_data: form.social_proof_real_data,
-    }).eq("id", "main");
+    };
 
-    if (error) return toast.error(error.message);
+    // Try updating extended fields. If it fails with 400, it means columns are missing.
+    const { error: extError } = await supabase.from("site_settings").update(extendedUpdate).eq("id", "main");
     
-    toast.success("تم حفظ إعدادات الموقع بنجاح");
+    if (extError) {
+      if (extError.message.includes("400") || extError.message.includes("column")) {
+         toast.warning("تم حفظ البيانات الأساسية، ولكن يجب تشغيل كود SQL في Supabase لإضافة الحقول الجديدة (Logo, Slogan, etc)");
+         console.warn("Missing columns in site_settings. Run the SQL script provided in the documentation.");
+      } else {
+         toast.error("خطأ في تحديث الحقول الإضافية: " + extError.message);
+      }
+    } else {
+      toast.success("تم حفظ كافة إعدادات الموقع بنجاح ✨");
+    }
+
     qc.invalidateQueries({ queryKey: ["site-settings"] });
     qc.invalidateQueries({ queryKey: ["site-settings-admin"] });
   };

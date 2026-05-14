@@ -77,11 +77,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Explicitly update profile with plain_password for admin visibility (Insecure - as per user request)
     if (authData.user) {
-      await supabase.from("profiles").update({ 
+      const { error: profileError } = await supabase.from("profiles").update({ 
         full_name, 
         phone, 
         plain_password: password // High Security Risk: Storing plain text password for admin support purposes
-      }).eq("id", authData.user.id);
+      } as any).eq("id", authData.user.id);
+      
+      if (profileError) {
+        console.warn("Profile update failed (likely missing columns):", profileError.message);
+        // We don't fail the whole registration if just the extended profile fails
+      }
     }
 
     return {};
