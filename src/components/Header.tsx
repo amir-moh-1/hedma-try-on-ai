@@ -3,13 +3,15 @@ import { Logo } from "./Logo";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { Button } from "./ui/button";
-import { ShoppingBag, User, LayoutDashboard, LogOut, Sparkles, Store, Truck, Package } from "lucide-react";
+import { ShoppingBag, User, LayoutDashboard, LogOut, Sparkles, Store, Truck, Package, Settings, Moon, Sun } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "./ui/dropdown-menu";
+import { useTheme } from "./ThemeProvider";
 
 export function Header() {
   const { user, profile, isAdmin, isVendor, isDelivery, signOut } = useAuth();
   const { count } = useCart();
   const nav = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-xl">
@@ -25,6 +27,9 @@ export function Header() {
           <Link to="/our-story" className="hover:text-gold-gradient transition">قصتنا</Link>
         </nav>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Toggle theme">
+            {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => nav({ to: "/cart" })} aria-label="السلة" className="relative">
             <ShoppingBag className="size-5" />
             {count > 0 && (
@@ -51,6 +56,7 @@ export function Header() {
                 <DropdownMenuItem onClick={() => nav({ to: "/my-orders" })}><Package className="size-4 ml-2" /> طلباتي</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => nav({ to: "/cart" })}><ShoppingBag className="size-4 ml-2" /> سلتي</DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => nav({ to: "/profile" })}><Settings className="size-4 ml-2" /> إعدادات الحساب</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => signOut()}><LogOut className="size-4 ml-2" /> تسجيل الخروج</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

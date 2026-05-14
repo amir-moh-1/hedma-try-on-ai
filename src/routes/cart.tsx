@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatEGP } from "@/lib/format";
-import { Trash2, Minus, Plus, MessageCircle, Tag, MapPin, Loader2 } from "lucide-react";
+import { Trash2, Minus, Plus, MessageCircle, Tag, MapPin, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({ component: Cart });
@@ -57,6 +57,15 @@ function Cart() {
     queryFn: async () => {
       const { data } = await supabase.from("coupons").select("percent,code,message").eq("active", true);
       return (data ?? []) as Coupon[];
+    },
+  });
+
+  const { data: purchasedOrders } = useQuery({
+    queryKey: ["my-purchases", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("orders").select("id, items, created_at").eq("customer_id", user?.id).eq("status", "delivered").order("created_at", { ascending: false });
+      return data ?? [];
     },
   });
 
@@ -217,6 +226,34 @@ function Cart() {
               {user ? "هنحفظلك الطلب وتقدر تتبعه من حسابك" : "سجّل دخولك عشان نتتبع الطلب ليك"}
             </p>
           </aside>
+        </div>
+      )}
+
+      {user && purchasedOrders && purchasedOrders.length > 0 && (
+        <div className="mt-16 pt-10 border-t">
+          <h2 className="font-display text-2xl font-bold mb-6 flex items-center gap-2"><CheckCircle2 className="size-6 text-green-500" /> سجل مشترياتي السابقة</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {purchasedOrders.map((order: any) => (
+              <div key={order.id} className="rounded-2xl border bg-card p-4">
+                <div className="text-xs text-muted-foreground mb-3 font-semibold">تاريخ الطلب: {new Date(order.created_at).toLocaleDateString("ar-EG")}</div>
+                <div className="space-y-3">
+                  {(order.items as any[]).map((i: any, idx: number) => (
+                    <div key={idx} className="flex gap-3 items-center">
+                      <div className="size-16 rounded-lg overflow-hidden bg-muted shrink-0">
+                        {i.image && <img src={i.image} className="size-full object-cover" alt={i.name} loading="lazy" />}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-sm">{i.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {i.qty} × {formatEGP(i.price)} {i.size && `• مقاس ${i.size}`} {i.color && `• لون ${i.color}`}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

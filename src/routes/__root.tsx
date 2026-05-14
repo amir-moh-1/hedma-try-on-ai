@@ -16,6 +16,7 @@ import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/ui/sonner";
 import { SocialProofPopup } from "@/components/SocialProofPopup";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 import appCss from "../styles.css?url";
 
@@ -94,20 +95,22 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <CartProvider>
-          <div className="min-h-screen flex flex-col">
-            <PromoBar />
-            <Header />
-            <main className="flex-1"><Outlet /></main>
-            <Footer />
-          </div>
-          <FloatingWhatsApp />
-          <SocialProofPopup />
-          <NotificationPrompt />
-          <Toaster richColors position="top-center" />
-        </CartProvider>
-      </AuthProvider>
+      <ThemeProvider defaultTheme="light" storageKey="hedma-theme">
+        <AuthProvider>
+          <CartProvider>
+            <div className="min-h-screen flex flex-col font-sans transition-colors duration-300">
+              <PromoBar />
+              <Header />
+              <main className="flex-1"><Outlet /></main>
+              <Footer />
+            </div>
+            <FloatingWhatsApp />
+            <SocialProofPopup />
+            <NotificationPrompt />
+            <Toaster richColors position="top-center" />
+          </CartProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

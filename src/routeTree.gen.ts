@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VendorRouteImport } from './routes/vendor'
 import { Route as TryOnRouteImport } from './routes/try-on'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as OurStoryRouteImport } from './routes/our-story'
 import { Route as MyOrdersRouteImport } from './routes/my-orders'
@@ -31,6 +32,11 @@ const VendorRoute = VendorRouteImport.update({
 const TryOnRoute = TryOnRouteImport.update({
   id: '/try-on',
   path: '/try-on',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductsRoute = ProductsRouteImport.update({
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/my-orders': typeof MyOrdersRoute
   '/our-story': typeof OurStoryRoute
   '/products': typeof ProductsRoute
+  '/profile': typeof ProfileRoute
   '/try-on': typeof TryOnRoute
   '/vendor': typeof VendorRoute
   '/product/$id': typeof ProductIdRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/my-orders': typeof MyOrdersRoute
   '/our-story': typeof OurStoryRoute
   '/products': typeof ProductsRoute
+  '/profile': typeof ProfileRoute
   '/try-on': typeof TryOnRoute
   '/vendor': typeof VendorRoute
   '/product/$id': typeof ProductIdRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/my-orders': typeof MyOrdersRoute
   '/our-story': typeof OurStoryRoute
   '/products': typeof ProductsRoute
+  '/profile': typeof ProfileRoute
   '/try-on': typeof TryOnRoute
   '/vendor': typeof VendorRoute
   '/product/$id': typeof ProductIdRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/my-orders'
     | '/our-story'
     | '/products'
+    | '/profile'
     | '/try-on'
     | '/vendor'
     | '/product/$id'
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/my-orders'
     | '/our-story'
     | '/products'
+    | '/profile'
     | '/try-on'
     | '/vendor'
     | '/product/$id'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/my-orders'
     | '/our-story'
     | '/products'
+    | '/profile'
     | '/try-on'
     | '/vendor'
     | '/product/$id'
@@ -193,6 +205,7 @@ export interface RootRouteChildren {
   MyOrdersRoute: typeof MyOrdersRoute
   OurStoryRoute: typeof OurStoryRoute
   ProductsRoute: typeof ProductsRoute
+  ProfileRoute: typeof ProfileRoute
   TryOnRoute: typeof TryOnRoute
   VendorRoute: typeof VendorRoute
   ProductIdRoute: typeof ProductIdRoute
@@ -213,6 +226,13 @@ declare module '@tanstack/react-router' {
       path: '/try-on'
       fullPath: '/try-on'
       preLoaderRoute: typeof TryOnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/products': {
@@ -305,6 +325,7 @@ const rootRouteChildren: RootRouteChildren = {
   MyOrdersRoute: MyOrdersRoute,
   OurStoryRoute: OurStoryRoute,
   ProductsRoute: ProductsRoute,
+  ProfileRoute: ProfileRoute,
   TryOnRoute: TryOnRoute,
   VendorRoute: VendorRoute,
   ProductIdRoute: ProductIdRoute,

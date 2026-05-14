@@ -11,11 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { formatEGP } from "@/lib/format";
-import { Trash2, Plus, Activity, Users, Tag, Package, Settings as SettingsIcon, Truck, Store, Sparkles, FileText } from "lucide-react";
+import { Trash2, Plus, Activity, Users, Tag, Package, Settings as SettingsIcon, Truck, Store, Sparkles, FileText, Edit } from "lucide-react";
 import { ORDER_STATUS_AR } from "@/lib/settings";
 import { OffersManager } from "@/components/OffersManager";
+import { CreateUser } from "@/components/CreateUser";
+import { EditUserDialog } from "@/components/EditUserDialog";
+import { CustomersTab } from "@/components/CustomersTab";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
 
@@ -91,6 +94,9 @@ function AdminPanel() {
     },
   });
 
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("orders");
+
   const [coupon, setCoupon] = useState({ username: "", percent: 10, code: "", message: "خصم خاص ليك من Hedma 🎁" });
   const addCoupon = async () => {
     if (!coupon.username || !coupon.percent || !coupon.code) return toast.error("املأ كل الحقول");
@@ -140,10 +146,11 @@ function AdminPanel() {
         ))}
       </div>
 
-      <Tabs defaultValue="orders">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="orders">الطلبيات</TabsTrigger>
           <TabsTrigger value="users">المستخدمين والصلاحيات</TabsTrigger>
+          <TabsTrigger value="customers">العملاء</TabsTrigger>
           <TabsTrigger value="merchants">المحلات</TabsTrigger>
           <TabsTrigger value="products">كل المنتجات</TabsTrigger>
           <TabsTrigger value="presets">الإدخال السريع</TabsTrigger>
@@ -156,15 +163,23 @@ function AdminPanel() {
         <TabsContent value="settings" className="mt-4"><SettingsTab /></TabsContent>
         <TabsContent value="merchants" className="mt-4"><MerchantsTab profiles={profiles ?? []} /></TabsContent>
         <TabsContent value="presets" className="mt-4"><PresetsTab /></TabsContent>
+        <TabsContent value="customers" className="mt-4">
+          <CustomersTab setCouponTab={(username) => {
+            setCoupon({ ...coupon, username });
+            setActiveTab("coupons");
+          }} />
+        </TabsContent>
 
         <TabsContent value="users" className="mt-4">
+          <CreateUser />
           <div className="rounded-2xl border bg-card overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-muted/40"><tr><th className="p-3 text-right">اليوزر نيم</th><th className="p-3 text-right">التليفون</th><th className="p-3 text-right">الصلاحيات</th></tr></thead>
+              <thead className="bg-muted/40"><tr><th className="p-3 text-right">اليوزر نيم</th><th className="p-3 text-right">الاسم</th><th className="p-3 text-right">التليفون</th><th className="p-3 text-right">الصلاحيات</th><th className="p-3">إجراء</th></tr></thead>
               <tbody>
                 {(profiles ?? []).map((u) => (
                   <tr key={u.id} className="border-t">
                     <td className="p-3 font-semibold">{u.username}</td>
+                    <td className="p-3">{u.full_name ?? "—"}</td>
                     <td className="p-3">{u.phone ?? "—"}</td>
                     <td className="p-3 flex gap-2 flex-wrap">
                       {(["admin","vendor","customer","delivery"] as const).map((r) => {
@@ -175,29 +190,54 @@ function AdminPanel() {
                         );
                       })}
                     </td>
+                    <td className="p-3">
+                      <Button size="sm" variant="ghost" onClick={() => setEditingUser(u)}><Edit className="size-4" /></Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {editingUser && <EditUserDialog user={editingUser} onClose={() => setEditingUser(null)} />}
         </TabsContent>
 
         <TabsContent value="products" className="mt-4">
-          <div className="rounded-2xl border bg-card overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40"><tr><th className="p-3 text-right">المنتج</th><th className="p-3 text-right">التاجر</th><th className="p-3 text-right">السعر</th><th className="p-3 text-right">المخزون</th><th className="p-3 text-right">حالة</th></tr></thead>
-              <tbody>
-                {(products ?? []).map((p) => (
-                  <tr key={p.id} className="border-t">
-                    <td className="p-3 font-semibold"><Link to="/product/$id" params={{ id: p.id }} className="hover:text-gold-gradient">{p.name}</Link></td>
-                    <td className="p-3">{p.vendor}</td>
-                    <td className="p-3">{formatEGP(p.price)}</td>
-                    <td className="p-3">{p.stock}</td>
-                    <td className="p-3">{p.active ? "✅" : "❌"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-6">
+            {Object.entries((products ?? []).reduce((acc: any, p: any) => {
+              const vendor = p.vendor || "غير محدد";
+              if (!acc[vendor]) acc[vendor] = [];
+              acc[vendor].push(p);
+              return acc;
+            }, {})).map(([vendor, vendorProducts]: [string, any]) => (
+              <div key={vendor} className="rounded-2xl border bg-card overflow-hidden">
+                <div className="bg-muted/50 p-4 border-b font-bold flex items-center justify-between">
+                  <span>🛍️ تاجر: {vendor}</span>
+                  <span className="text-sm font-normal text-muted-foreground">عدد المنتجات: {vendorProducts.length}</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/20"><tr><th className="p-3 text-right w-1/2">المنتج</th><th className="p-3 text-right">السعر</th><th className="p-3 text-right">المخزون</th><th className="p-3 text-right">حالة</th></tr></thead>
+                    <tbody>
+                      {vendorProducts.map((p: any) => (
+                        <tr key={p.id} className="border-t hover:bg-muted/10 transition-colors">
+                          <td className="p-3 font-semibold"><Link to="/product/$id" params={{ id: p.id }} className="hover:text-gold-gradient">{p.name}</Link></td>
+                          <td className="p-3">{formatEGP(p.price)}</td>
+                          <td className="p-3">
+                            <span className={`px-2 py-1 rounded-md font-bold ${p.stock === 0 ? "bg-destructive/10 text-destructive" : p.stock < 5 ? "bg-amber-500/10 text-amber-600" : "text-muted-foreground"}`}>
+                              {p.stock}
+                              {p.stock === 0 && " (نفد)"}
+                              {p.stock > 0 && p.stock < 5 && " (منخفض)"}
+                            </span>
+                          </td>
+                          <td className="p-3">{p.active ? "✅" : "❌"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+            {(!products || products.length === 0) && <div className="p-10 text-center text-muted-foreground border rounded-2xl">لا توجد منتجات</div>}
           </div>
         </TabsContent>
 
@@ -283,52 +323,96 @@ function OrdersTab({ profiles }: { profiles: { id: string; username: string; rol
     if (error) toast.error(error.message); else { toast.success("تم تحديث الطلب"); qc.invalidateQueries({ queryKey: ["admin-orders"] }); qc.invalidateQueries({ queryKey: ["admin-products"] }); }
   };
 
-  const generateInvoice = (order: any) => {
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const generateInvoice = async (order: any) => {
+    toast.info("جاري تحضير الفاتورة...");
+    const container = document.createElement("div");
+    container.style.position = "absolute";
+    container.style.top = "-9999px";
+    container.style.left = "-9999px";
+    container.style.width = "800px";
+    container.style.backgroundColor = "white";
+    container.style.padding = "40px";
+    container.style.direction = "rtl";
+    container.style.fontFamily = "Cairo, system-ui, sans-serif";
+    container.style.color = "black";
     
-    // Add simple font configuration for Arabic if needed (requires custom font usually, using fallback here)
-    doc.setFontSize(22);
-    doc.text("HEDMA - Invoice", 105, 20, { align: "center" });
+    const itemsHTML = ((order.items as any[]) ?? []).map(i => `
+      <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 12px;">${i.name}</td>
+        <td style="padding: 12px;">${i.size || "-"}</td>
+        <td style="padding: 12px;">${i.color || "-"}</td>
+        <td style="padding: 12px; font-weight: bold;">${i.qty}</td>
+        <td style="padding: 12px;" dir="ltr">${formatEGP(i.price)}</td>
+        <td style="padding: 12px;" dir="ltr">${formatEGP(i.price * i.qty)}</td>
+      </tr>
+    `).join("");
+
+    container.innerHTML = `
+      <div style="border: 2px solid #f3f4f6; padding: 30px; border-radius: 16px;">
+        <h1 style="text-align: center; color: #b8860b; font-size: 32px; margin-bottom: 5px; font-weight: 800;">فاتورة هدمة (HEDMA)</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">أناقتك تبدأ من هنا</p>
+        
+        <div style="display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #f3f4f6; padding-bottom: 20px;">
+          <div>
+            <p style="margin: 5px 0;"><strong>رقم الطلب:</strong> <span dir="ltr">#${order.id.slice(0, 8)}</span></p>
+            <p style="margin: 5px 0;"><strong>التاريخ:</strong> <span dir="ltr">${new Date(order.created_at).toLocaleString("ar-EG")}</span></p>
+          </div>
+          <div style="text-align: left;">
+            <p style="margin: 5px 0;"><strong>العميل:</strong> ${order.customer_name || "-"}</p>
+            <p style="margin: 5px 0;"><strong>الهاتف:</strong> <span dir="ltr">${order.customer_phone || "-"}</span></p>
+            <p style="margin: 5px 0;"><strong>العنوان:</strong> ${order.customer_address || "-"}</p>
+          </div>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; text-align: right;">
+          <thead style="background-color: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+            <tr>
+              <th style="padding: 12px;">المنتج</th>
+              <th style="padding: 12px;">المقاس</th>
+              <th style="padding: 12px;">اللون</th>
+              <th style="padding: 12px;">الكمية</th>
+              <th style="padding: 12px;">السعر</th>
+              <th style="padding: 12px;">الإجمالي</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHTML}
+          </tbody>
+        </table>
+        
+        <div style="text-align: left; font-size: 18px; background-color: #f9fafb; padding: 20px; border-radius: 12px; display: inline-block; float: left; min-width: 250px;">
+          ${order.discount > 0 ? `<div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>الخصم:</span> <span dir="ltr" style="color: #ef4444;">-${formatEGP(order.discount)}</span></div>` : ""}
+          <div style="display: flex; justify-content: space-between; border-top: 1px solid #e5e7eb; padding-top: 10px; font-size: 24px; color: #b8860b; font-weight: bold;">
+            <span>الإجمالي النهائي:</span> <span dir="ltr">${formatEGP(order.total - (order.discount || 0))}</span>
+          </div>
+        </div>
+        <div style="clear: both;"></div>
+        
+        <div style="text-align: center; margin-top: 50px; color: #9ca3af; font-size: 14px;">
+          <p>شكراً لتسوقك من هدمة! نتمنى أن تنال منتجاتنا إعجابك.</p>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(container);
     
-    doc.setFontSize(12);
-    doc.text(`Order ID: #${order.id.slice(0, 8)}`, 20, 40);
-    doc.text(`Date: ${new Date(order.created_at).toLocaleString("en-GB")}`, 20, 48);
-    doc.text(`Customer: ${order.customer_name || "-"}`, 20, 56);
-    doc.text(`Phone: ${order.customer_phone || "-"}`, 20, 64);
-    doc.text(`Address: ${order.customer_address || "-"}`, 20, 72);
-    
-    const items = (order.items as any[]) ?? [];
-    const tableData = items.map(item => [
-      item.name, 
-      item.size || "-", 
-      item.color || "-", 
-      item.qty.toString(), 
-      formatEGP(item.price), 
-      formatEGP(item.price * item.qty)
-    ]);
-    
-    autoTable(doc, {
-      startY: 85,
-      head: [["Product", "Size", "Color", "Qty", "Unit Price", "Total"]],
-      body: tableData,
-      theme: "grid",
-      headStyles: { fillColor: [41, 41, 41] }
-    });
-    
-    const finalY = (doc as any).lastAutoTable.finalY || 100;
-    
-    doc.setFontSize(14);
-    if (order.discount > 0) {
-      doc.text(`Discount: ${formatEGP(order.discount)}`, 140, finalY + 10);
-      doc.text(`Final Total: ${formatEGP(order.total - order.discount)}`, 140, finalY + 18);
-    } else {
-      doc.text(`Total: ${formatEGP(order.total)}`, 140, finalY + 10);
+    try {
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`invoice_hedma_${order.id.slice(0, 8)}.pdf`);
+      toast.success("تم تحميل الفاتورة بنجاح");
+    } catch (err) {
+      toast.error("حدث خطأ أثناء توليد الفاتورة");
+      console.error(err);
+    } finally {
+      document.body.removeChild(container);
     }
-    
-    doc.setFontSize(10);
-    doc.text("Thank you for shopping with Hedma!", 105, 280, { align: "center" });
-    
-    doc.save(`invoice_hedma_${order.id.slice(0, 8)}.pdf`);
   };
   return (
     <div className="space-y-3">
