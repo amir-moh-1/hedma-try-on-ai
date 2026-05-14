@@ -9,8 +9,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 // Create a secondary client so it doesn't affect the admin's session
 const supabaseSecondary = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
+  import.meta.env.VITE_SUPABASE_URL || "",
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || ""
 );
 
 export function CreateUser() {
