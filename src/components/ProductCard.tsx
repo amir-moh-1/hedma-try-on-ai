@@ -2,16 +2,19 @@ import { Link } from "@tanstack/react-router";
 import { formatEGP } from "@/lib/format";
 import { catAr } from "@/lib/categories";
 import { useCart } from "@/lib/cart";
-import { ShoppingBag } from "lucide-react";
+import { Plus, Heart } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 
 export type ProductCardData = {
   id: string;
   name: string;
   price: number;
   image_url: string | null;
+  secondary_image_url?: string | null;
   category: string;
   stock: number;
+  created_at?: string | null;
   discountedPrice?: number | null;
 };
 
@@ -19,6 +22,53 @@ export function ProductCard({ p }: { p: ProductCardData }) {
   const hasDiscount = p.discountedPrice != null && p.discountedPrice < p.price;
   const finalPrice = hasDiscount ? p.discountedPrice! : p.price;
   const { add } = useCart();
+
+  // Wishlist state and handler
+  const [inWishlist, setInWishlist] = useState<boolean>(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem("hedma-wishlist") || "[]");
+      return list.includes(p.id);
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const list = JSON.parse(localStorage.getItem("hedma-wishlist") || "[]");
+      let newList;
+      if (list.includes(p.id)) {
+        newList = list.filter((id: string) => id !== p.id);
+        setInWishlist(false);
+        toast.success("تم الحذف من المفضلة ❤️");
+      } else {
+        newList = [...list, p.id];
+        setInWishlist(true);
+        toast.success("تم الإضافة للمفضلة ❤️");
+      }
+      localStorage.setItem("hedma-wishlist", JSON.stringify(newList));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Mobile Swipe states & handlers
+  const [activeMobileImg, setActiveMobileImg] = useState<number>(0);
+  let touchStartX = 0;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 40 && p.secondary_image_url) {
+      setActiveMobileImg((prev) => (prev === 0 ? 1 : 0));
+    }
+  };
 
   const quickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -28,46 +78,106 @@ export function ProductCard({ p }: { p: ProductCardData }) {
     toast.success("اتضاف للسلة ✅", { description: p.name });
   };
 
+  // Badge Logic
+  const isOutOfStock = p.stock === 0;
+  const isLastItems = p.stock > 0 && p.stock < 3;
+  const isNew = p.created_at && (new Date().getTime() - new Date(p.created_at).getTime()) < 7 * 24 * 60 * 60 * 1000;
+  const isPopular = p.stock >= 3 && (hasDiscount || p.price > 400);
+
   return (
     <Link
       to="/product/$id" params={{ id: p.id }}
-      className="group block rounded-2xl overflow-hidden bg-card border hover:shadow-luxe transition-all duration-300"
+      className="group block rounded-2xl overflow-hidden bg-card border hover:shadow-luxe transition-all duration-300 relative"
     >
-      <div className="aspect-[4/5] overflow-hidden bg-muted relative">
+      <div 
+        className="aspect-[4/5] overflow-hidden bg-muted relative"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Images: Desktop double-image smooth hover & Mobile active touch preview */}
         {p.image_url ? (
-          <img src={p.image_url} alt={p.name} loading="lazy"
-            className="size-full object-cover group-hover:scale-105 transition duration-700" />
-        ) : <div className="size-full grid place-items-center text-muted-foreground">لا توجد صورة</div>}
-        {hasDiscount && (
-          <span className="absolute top-3 right-3 px-2 py-1 rounded-md text-xs font-bold gradient-gold text-primary shadow-luxe">خصم خاص</span>
+          <>
+            {/* Main Image */}
+            <img 
+              src={p.image_url} 
+              alt={p.name} 
+              loading="lazy"
+              className={`size-full object-cover transition-all duration-700 md:group-hover:opacity-0 ${
+                activeMobileImg === 0 ? "opacity-100" : "opacity-0 md:opacity-100"
+              }`} 
+            />
+            {/* Secondary Image on Hover/Swipe */}
+            {p.secondary_image_url && (
+              <img 
+                src={p.secondary_image_url} 
+                alt={p.name} 
+                loading="lazy"
+                className={`absolute inset-0 size-full object-cover transition-all duration-700 opacity-0 md:group-hover:opacity-100 ${
+                  activeMobileImg === 1 ? "opacity-100" : "opacity-0"
+                }`} 
+              />
+            )}
+          </>
+        ) : (
+          <div className="size-full grid place-items-center text-muted-foreground">لا توجد صورة</div>
         )}
-        {p.stock === 0 && (
-          <span className="absolute top-3 left-3 px-2 py-1 rounded-md text-xs font-bold bg-destructive text-destructive-foreground">نفذ المخزون ⚠️</span>
+
+        {/* Mobile Swipe Dot Indicators */}
+        {p.secondary_image_url && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10 md:hidden bg-black/40 px-2 py-0.5 rounded-full">
+            <span className={`size-1.5 rounded-full transition-all duration-300 ${activeMobileImg === 0 ? "bg-[#D4A017] scale-125" : "bg-[#F5F0E8]/50"}`} />
+            <span className={`size-1.5 rounded-full transition-all duration-300 ${activeMobileImg === 1 ? "bg-[#D4A017] scale-125" : "bg-[#F5F0E8]/50"}`} />
+          </div>
         )}
+
+        {/* Wishlist ❤️ Button */}
+        <button
+          onClick={toggleWishlist}
+          aria-label="أضف للمفضلة"
+          className="absolute top-3 right-3 z-20 grid place-items-center size-8 rounded-full bg-card/80 backdrop-blur-sm text-foreground shadow-md hover:scale-110 active:scale-95 transition"
+        >
+          <Heart className={`size-4.5 transition-colors ${inWishlist ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"}`} />
+        </button>
+
+        {/* Corner Badges */}
+        {isOutOfStock ? (
+          <span className="absolute top-3 left-3 z-10 px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-red-600 text-white shadow-md">⚠️ نفذ</span>
+        ) : isLastItems ? (
+          <span className="absolute top-3 left-3 z-10 px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-amber-600 text-white shadow-md">⏳ آخر قطع</span>
+        ) : isNew ? (
+          <span className="absolute top-3 left-3 z-10 px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-600 text-white shadow-md">⚡ جديد</span>
+        ) : isPopular ? (
+          <span className="absolute top-3 left-3 z-10 px-2.5 py-0.5 rounded-lg text-[10px] font-bold gradient-gold text-primary shadow-md">🔥 رائج</span>
+        ) : hasDiscount ? (
+          <span className="absolute top-3 left-3 z-10 px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-gold text-primary shadow-md">خصم خاص</span>
+        ) : null}
+
+        {/* Direct gold Plus button */}
         {p.stock > 0 && (
           <button
             onClick={quickAdd}
             aria-label="أضف للسلة"
-            className="absolute bottom-3 left-3 grid place-items-center size-10 rounded-full gradient-gold text-primary shadow-luxe opacity-0 group-hover:opacity-100 hover:scale-110 transition md:opacity-100"
+            className="absolute bottom-3 left-3 z-20 grid place-items-center size-9 rounded-full gradient-gold text-primary shadow-luxe hover:scale-110 active:scale-95 transition-all opacity-90 md:opacity-0 md:group-hover:opacity-100"
           >
-            <ShoppingBag className="size-5" />
+            <Plus className="size-5 font-bold" />
           </button>
         )}
       </div>
-      <div className="p-4">
-        <div className="text-xs text-muted-foreground mb-1">{catAr(p.category)}</div>
-        <div className="font-semibold line-clamp-1">{p.name}</div>
+
+      <div className="p-3">
+        <div className="text-[10px] text-muted-foreground mb-0.5">{catAr(p.category)}</div>
+        <div className="font-bold text-sm line-clamp-1 text-foreground">{p.name}</div>
         {p.stock === 0 && (
-          <div className="text-xs font-bold text-red-600 mt-0.5">هيتوفر قريباً</div>
+          <div className="text-[10px] font-semibold text-red-500 mt-0.5">هيتوفر قريباً</div>
         )}
-        <div className="mt-2 flex items-baseline gap-2">
+        <div className="mt-1.5 flex items-baseline gap-2">
           {hasDiscount ? (
             <>
-              <span className="font-display text-lg font-bold text-gold-gradient">{formatEGP(p.discountedPrice!)}</span>
-              <span className="text-sm text-muted-foreground line-through">{formatEGP(p.price)}</span>
+              <span className="font-display text-base font-black text-gold">{formatEGP(p.discountedPrice!)}</span>
+              <span className="text-xs text-muted-foreground line-through">{formatEGP(p.price)}</span>
             </>
           ) : (
-            <span className="font-display text-lg font-bold">{formatEGP(p.price)}</span>
+            <span className="font-display text-base font-black text-foreground">{formatEGP(p.price)}</span>
           )}
         </div>
       </div>

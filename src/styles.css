@@ -49,59 +49,59 @@
 
 :root {
   --radius: 0.75rem;
-  --background: oklch(0.98 0.01 80);
-  --foreground: oklch(0.18 0.02 50);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 50);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 50);
-  --primary: oklch(0.22 0.03 50);            /* deep charcoal */
-  --primary-foreground: oklch(0.98 0.01 80);
-  --secondary: oklch(0.94 0.02 70);
-  --secondary-foreground: oklch(0.22 0.03 50);
-  --muted: oklch(0.95 0.01 70);
-  --muted-foreground: oklch(0.45 0.02 50);
-  --accent: oklch(0.92 0.04 70);
-  --accent-foreground: oklch(0.22 0.03 50);
-  --gold: oklch(0.78 0.13 80);                /* warm gold */
-  --gold-foreground: oklch(0.18 0.02 50);
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.9 0.01 70);
-  --input: oklch(0.92 0.01 70);
-  --ring: oklch(0.78 0.13 80);
-  --sidebar: oklch(0.98 0.01 80);
-  --sidebar-foreground: oklch(0.18 0.02 50);
-  --sidebar-primary: oklch(0.22 0.03 50);
-  --sidebar-primary-foreground: oklch(0.98 0.01 80);
-  --sidebar-accent: oklch(0.94 0.02 70);
-  --sidebar-accent-foreground: oklch(0.22 0.03 50);
-  --sidebar-border: oklch(0.9 0.01 70);
-  --sidebar-ring: oklch(0.78 0.13 80);
+  --background: #F5F0E8;
+  --foreground: #1A1A1A;
+  --card: #FFFFFF;
+  --card-foreground: #1A1A1A;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A1A;
+  --primary: #1A1A1A;
+  --primary-foreground: #F5F0E8;
+  --secondary: #E5DCD0;
+  --secondary-foreground: #1A1A1A;
+  --muted: #E5DCD0;
+  --muted-foreground: #7C7468;
+  --accent: #E5DCD0;
+  --accent-foreground: #1A1A1A;
+  --gold: #D4A017;
+  --gold-foreground: #1A1A1A;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #E5DCD0;
+  --input: #E5DCD0;
+  --ring: #D4A017;
+  --sidebar: #F5F0E8;
+  --sidebar-foreground: #1A1A1A;
+  --sidebar-primary: #1A1A1A;
+  --sidebar-primary-foreground: #F5F0E8;
+  --sidebar-accent: #E5DCD0;
+  --sidebar-accent-foreground: #1A1A1A;
+  --sidebar-border: #E5DCD0;
+  --sidebar-ring: #D4A017;
 }
 
 .dark {
-  --background: oklch(0.16 0.02 50);
-  --foreground: oklch(0.96 0.01 80);
-  --card: oklch(0.2 0.02 50);
-  --card-foreground: oklch(0.96 0.01 80);
-  --popover: oklch(0.2 0.02 50);
-  --popover-foreground: oklch(0.96 0.01 80);
-  --primary: oklch(0.96 0.01 80);
-  --primary-foreground: oklch(0.18 0.02 50);
-  --secondary: oklch(0.28 0.02 50);
-  --secondary-foreground: oklch(0.96 0.01 80);
-  --muted: oklch(0.28 0.02 50);
-  --muted-foreground: oklch(0.7 0.02 70);
-  --accent: oklch(0.32 0.04 70);
-  --accent-foreground: oklch(0.96 0.01 80);
-  --gold: oklch(0.78 0.13 80);
-  --gold-foreground: oklch(0.18 0.02 50);
-  --destructive: oklch(0.65 0.2 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.78 0.13 80);
+  --background: #1A1A1A;
+  --foreground: #F5F0E8;
+  --card: #2A2A2A;
+  --card-foreground: #F5F0E8;
+  --popover: #2A2A2A;
+  --popover-foreground: #F5F0E8;
+  --primary: #F5F0E8;
+  --primary-foreground: #1A1A1A;
+  --secondary: #333333;
+  --secondary-foreground: #F5F0E8;
+  --muted: #333333;
+  --muted-foreground: #A8A29E;
+  --accent: #333333;
+  --accent-foreground: #F5F0E8;
+  --gold: #D4A017;
+  --gold-foreground: #1A1A1A;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #3A3A3A;
+  --input: #3A3A3A;
+  --ring: #D4A017;
 }
 
 @layer base {
@@ -119,16 +119,16 @@
 
 @layer utilities {
   .gradient-gold {
-    background-image: linear-gradient(135deg, oklch(0.85 0.13 85), oklch(0.72 0.15 70));
+    background-image: linear-gradient(135deg, #F5C242, #D4A017);
   }
   .text-gold-gradient {
-    background-image: linear-gradient(135deg, oklch(0.85 0.13 85), oklch(0.65 0.16 60));
+    background-image: linear-gradient(135deg, #F5C242, #B8860B);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .shadow-luxe {
-    box-shadow: 0 20px 50px -20px oklch(0.18 0.02 50 / 0.25);
+    box-shadow: 0 20px 50px -20px rgba(26, 26, 26, 0.15);
   }
   .animate-marquee {
     animation: marquee 35s linear infinite;

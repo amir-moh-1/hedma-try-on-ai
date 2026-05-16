@@ -13,6 +13,7 @@ import { Header } from "@/components/Header";
 import { PromoBar } from "@/components/PromoBar";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 import { Footer } from "@/components/Footer";
+import { BottomNav } from "@/components/BottomNav";
 import { Toaster } from "@/components/ui/sonner";
 import { SocialProofPopup } from "@/components/SocialProofPopup";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
@@ -144,8 +145,9 @@ function RootComponent() {
             <div className="min-h-screen flex flex-col font-sans transition-colors duration-300">
               <PromoBar />
               <Header />
-              <main className="flex-1"><Outlet /></main>
+              <main className="flex-1 pb-16 md:pb-0"><Outlet /></main>
               <Footer />
+              <BottomNav />
             </div>
             <FloatingWhatsApp />
             <SocialProofPopup />
