@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatEGP } from "@/lib/format";
-import { Trash2, Minus, Plus, MessageCircle, Tag, MapPin, Loader2, CheckCircle2 } from "lucide-react";
+import { Trash2, Minus, Plus, MessageCircle, Tag, MapPin, Loader2, CheckCircle2, FileText } from "lucide-react";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 export const Route = createFileRoute("/cart")({ component: Cart });
 
@@ -19,7 +21,7 @@ type Coupon = { percent: number; code: string; message: string | null };
 function Cart() {
   const { items, remove, setQty, total, clear } = useCart();
   const { user, profile } = useAuth();
-  const { whatsapp } = useSiteSettings();
+  const { whatsapp, slogan, logo_url } = useSiteSettings();
   const nav = useNavigate();
   const [codeInput, setCodeInput] = useState("");
   const [manualCoupon, setManualCoupon] = useState<Coupon | null>(null);
@@ -27,6 +29,122 @@ function Cart() {
   const [address, setAddress] = useState("");
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+
+  const downloadInvoice = async () => {
+    setDownloadingInvoice(true);
+    toast.info("جاري تحضير فاتورة المشتريات... 📄");
+
+    const invNum = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+    const dateStr = new Date().toLocaleDateString("ar-EG");
+    const customerName = profile?.full_name || profile?.username || "عميل هدمة";
+
+    const itemsHTML = items.map(i => `
+      <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 12px; font-weight: bold;">${i.name}</td>
+        <td style="padding: 12px; text-align: center;">${i.size || "-"}</td>
+        <td style="padding: 12px; text-align: center;">${i.color || "-"}</td>
+        <td style="padding: 12px; text-align: center;">${i.qty}</td>
+        <td style="padding: 12px; text-align: left;" dir="ltr">${formatEGP(i.price)}</td>
+        <td style="padding: 12px; text-align: left;" dir="ltr">${formatEGP(i.price * i.qty)}</td>
+      </tr>
+    `).join("");
+
+    const container = document.createElement("div");
+    container.style.position = "absolute";
+    container.style.top = "-9999px";
+    container.style.left = "-9999px";
+    container.style.width = "800px";
+    container.style.backgroundColor = "white";
+    container.style.padding = "40px";
+    container.style.direction = "rtl";
+    container.style.fontFamily = "Cairo, system-ui, sans-serif";
+    container.style.color = "black";
+
+    container.innerHTML = `
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet">
+      <div style="border: 2px solid #D4A017; padding: 40px; border-radius: 24px; font-family: 'Cairo', sans-serif; background-color: #F5F0E8;">
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #D4A017; padding-bottom: 20px; margin-bottom: 30px;">
+            ${logo_url ? '<img src="' + logo_url + '" style="height: 60px; object-fit: contain; margin-bottom: 5px;" alt="Logo" />' : '<h1 style="color: #1A1A1A; font-size: 36px; margin: 0; font-weight: 800;">HEDMA | هدمة</h1>'}
+            <p style="color: #D4A017; margin: 5px 0 0 0; font-weight: 700; font-size: 16px;">${slogan || "أناقتك بلمسة ذكاء اصطناعي ✨"}</p>
+          </div>
+          <div style="text-align: left;">
+            <h2 style="color: #1A1A1A; margin: 0; font-size: 20px; font-weight: 700;">فاتورة المشتريات</h2>
+            <p style="color: #666; margin: 5px 0 0 0; font-size: 12px;">تاريخ الطلب: ${dateStr}</p>
+          </div>
+        </div>
+
+        <!-- Meta Info -->
+        <div style="background-color: white; border: 1px solid #e5e7eb; padding: 20px; border-radius: 16px; margin-bottom: 30px; display: flex; justify-content: space-between;">
+          <div>
+            <p style="margin: 5px 0; font-size: 14px;"><strong>رقم الفاتورة:</strong> <span style="color: #D4A017; font-weight: bold;">${invNum}</span></p>
+            <p style="margin: 5px 0; font-size: 14px;"><strong>العميل:</strong> ${customerName}</p>
+          </div>
+          <div style="text-align: left;">
+            <p style="margin: 5px 0; font-size: 14px;"><strong>رقم الهاتف:</strong> <span dir="ltr">${phone || "—"}</span></p>
+            <p style="margin: 5px 0; font-size: 14px;"><strong>العنوان:</strong> ${address || "—"}</p>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; text-align: right; background-color: white; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;">
+          <thead style="background-color: #1A1A1A; color: white;">
+            <tr>
+              <th style="padding: 15px; font-weight: bold;">المنتج</th>
+              <th style="padding: 15px; text-align: center; font-weight: bold;">المقاس</th>
+              <th style="padding: 15px; text-align: center; font-weight: bold;">اللون</th>
+              <th style="padding: 15px; text-align: center; font-weight: bold;">الكمية</th>
+              <th style="padding: 15px; text-align: left; font-weight: bold;">السعر الفردي</th>
+              <th style="padding: 15px; text-align: left; font-weight: bold;">الإجمالي</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHTML}
+          </tbody>
+        </table>
+
+        <!-- Summary -->
+        <div style="text-align: left; background-color: #1A1A1A; color: white; padding: 25px; border-radius: 20px; display: inline-block; float: left; min-width: 300px; margin-top: 10px; border-right: 5px solid #D4A017;">
+          <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px;">
+            <span>الإجمالي الفرعي:</span>
+            <span style="font-family: monospace;">${formatEGP(total)}</span>
+          </div>
+          ${best ? '<div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; color: #D4A017;"><span>خصم الكوبون (' + best.code + '):</span><span style="font-family: monospace;">-' + formatEGP(discount) + '</span></div>' : ''}
+          <div style="display: flex; justify-content: space-between; font-size: 22px; font-weight: bold; border-top: 1px solid #333; padding-top: 10px; margin-top: 10px;">
+            <span style="color: #F5F0E8; margin-left: 20px;">الإجمالي النهائي:</span>
+            <span style="color: #D4A017; font-family: monospace;">${formatEGP(grand)}</span>
+          </div>
+        </div>
+        <div style="clear: both;"></div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 60px; padding-top: 20px; border-top: 2px dashed #D4A017; color: #666; font-size: 13px;">
+          <p style="font-weight: bold; color: #1A1A1A; margin-bottom: 5px;">شكراً لتسوقك مع هدمة 🧡</p>
+          <p style="margin: 0;">نتمنى أن تنال منتجاتنا إعجابك! نسعد بخدمتك دائماً.</p>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(container);
+
+    try {
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`hedma-invoice-\${invNum}.pdf`);
+      toast.success("تم تحميل فاتورة المشتريات كـ PDF بنجاح! 📄🎉");
+    } catch (err) {
+      console.error(err);
+      toast.error("حدث خطأ أثناء إعداد الفاتورة");
+    } finally {
+      document.body.removeChild(container);
+      setDownloadingInvoice(false);
+    }
+  };
 
   const getLocation = () => {
     if (!navigator.geolocation) {
@@ -219,9 +337,14 @@ function Cart() {
               <span>السعر النهائي</span><span>{formatEGP(grand)}</span>
             </div>
             {best?.message && <div className="text-xs rounded-lg bg-accent/40 p-2">{best.message}</div>}
-            <Button onClick={checkout} size="lg" disabled={submitting} className="w-full gradient-gold text-primary shadow-luxe">
-              <MessageCircle className="size-4 ml-2" /> {submitting ? "جاري الإرسال..." : "إتمام الطلب على واتساب"}
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button onClick={checkout} size="lg" disabled={submitting || downloadingInvoice} className="w-full gradient-gold text-primary shadow-luxe font-bold">
+                <MessageCircle className="size-4 ml-2" /> {submitting ? "جاري الإرسال..." : "إتمام الطلب على واتساب"}
+              </Button>
+              <Button onClick={downloadInvoice} size="lg" variant="outline" disabled={submitting || downloadingInvoice} className="w-full border-gold-gradient/20 hover:bg-gold-gradient/10 font-bold">
+                <FileText className="size-4 ml-2 text-gold-gradient" /> {downloadingInvoice ? "جاري التحضير..." : "📄 حمّل فاتورتك"}
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground text-center">
               {user ? "هنحفظلك الطلب وتقدر تتبعه من حسابك" : "سجّل دخولك عشان نتتبع الطلب ليك"}
             </p>

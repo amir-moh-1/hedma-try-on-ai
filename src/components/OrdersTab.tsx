@@ -8,9 +8,11 @@ import { FileText, Truck } from "lucide-react";
 import { ORDER_STATUS_AR } from "@/lib/settings";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { useSiteSettings } from "@/lib/settings";
 
 export function OrdersTab({ profiles }: { profiles: { id: string; username: string; roles: string[] }[] }) {
   const qc = useQueryClient();
+  const { logo_url, slogan } = useSiteSettings();
   const { data: orders } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
@@ -69,8 +71,10 @@ export function OrdersTab({ profiles }: { profiles: { id: string; username: stri
     container.innerHTML = `
       <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet">
       <div style="border: 2px solid #f3f4f6; padding: 30px; border-radius: 16px; font-family: 'Cairo', sans-serif;">
-        <h1 style="text-align: center; color: #b8860b; font-size: 32px; margin-bottom: 5px; font-weight: 800;">فاتورة هدمة (HEDMA)</h1>
-        <p style="text-align: center; color: #666; margin-bottom: 30px;">أناقتك تبدأ من هنا</p>
+        <div style="text-align: center; margin-bottom: 20px;">
+          ${logo_url ? '<img src="' + logo_url + '" style="height: 60px; object-fit: contain; margin-bottom: 5px;" alt="Logo" />' : '<h1 style="color: #b8860b; font-size: 32px; margin-bottom: 5px; font-weight: 800;">HEDMA | هدمة</h1>'}
+          <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">${slogan || "أناقتك تبدأ من هنا"}</p>
+        </div>
         
         <div style="display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #f3f4f6; padding-bottom: 20px;">
           <div>

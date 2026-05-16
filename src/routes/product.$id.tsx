@@ -130,12 +130,25 @@ function ProductDetail() {
 
           <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
             {p.location && <span className="inline-flex items-center gap-1"><MapPin className="size-4" /> {p.location}</span>}
-            <span className="inline-flex items-center gap-1"><Package className="size-4" /> متاح: {p.stock}</span>
+            <span className="inline-flex items-center gap-1">
+              <Package className="size-4" /> 
+              {p.stock === 0 ? (
+                <span className="text-red-600 font-bold">نفذ المخزون ⚠️ (هيتوفر قريباً)</span>
+              ) : (
+                `متاح: ${p.stock}`
+              )}
+            </span>
           </div>
 
           {p.stock > 0 && p.stock <= 5 && (
             <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-destructive/10 text-destructive px-3 py-1.5 text-sm font-bold">
               <AlertTriangle className="size-4" /> فضل {p.stock} قطع بس!
+            </div>
+          )}
+
+          {p.stock === 0 && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-destructive/10 text-destructive px-3 py-1.5 text-sm font-bold">
+              <AlertTriangle className="size-4" /> نفذ المخزون ⚠️ هيتوفر قريباً
             </div>
           )}
 
@@ -168,7 +181,7 @@ function ProductDetail() {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Button onClick={handleAdd} disabled={p.stock === 0} size="lg" className="gradient-gold text-primary hover:opacity-90 shadow-luxe">
-              <ShoppingBag className="size-4 ml-2" /> {p.stock === 0 ? "نفد المخزون" : "أضف للسلة"}
+              <ShoppingBag className="size-4 ml-2" /> {p.stock === 0 ? "نفد المخزون ⚠️ | هيتوفر قريباً" : "أضف للسلة"}
             </Button>
             <Button variant="outline" size="lg" onClick={() => nav({ to: "/try-on", search: { product: p.id } as never })}>
               <Sparkles className="size-4 ml-2" /> جرّبه عليك بالـ AI

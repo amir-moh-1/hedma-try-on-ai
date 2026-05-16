@@ -21,6 +21,8 @@ import { SettingsTab } from "@/components/SettingsTab";
 import { PresetsTab } from "@/components/PresetsTab";
 import { ActivityTab } from "@/components/admin/ActivityTab";
 import { VendorInsightsTab } from "@/components/admin/VendorInsightsTab";
+import { ProductControlTab } from "@/components/admin/ProductControlTab";
+import { InventoryReportsTab } from "@/components/admin/InventoryReportsTab";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
 
@@ -73,11 +75,12 @@ function AdminPanel() {
             <h1 className="font-display text-3xl font-black uppercase tracking-tight">
               {activeTab === "dashboard" && "لوحة التحكم"}
               {activeTab === "products" && "المنتجات"}
+              {activeTab === "product-control" && "التحكم بالمنتجات"}
               {activeTab === "orders" && "الطلبيات"}
               {activeTab === "merchants" && "المحلات والتجار"}
               {activeTab === "users" && "المستخدمين والصلاحيات"}
               {activeTab === "customers" && "قاعدة العملاء"}
-              {activeTab === "inventory" && "الجرد الذكي"}
+              {activeTab === "inventory" && "الجرد والتقارير"}
               {activeTab === "vendor-insights" && "تحليل أداء التجار"}
               {activeTab === "coupons" && "العروض والكوبونات"}
               {activeTab === "presets" && "رفع جماعي مسبق"}
@@ -114,9 +117,15 @@ function AdminPanel() {
             </div>
           )}
 
+          {activeTab === "product-control" && (
+            <div className="space-y-6 animate-in fade-in duration-500">
+              <ProductControlTab />
+            </div>
+          )}
+
           {activeTab === "inventory" && (
              <div className="space-y-6 animate-in fade-in duration-500">
-               <InventoryView products={products ?? []} />
+               <InventoryReportsTab />
              </div>
           )}
 

@@ -42,7 +42,7 @@ export function ProductCard({ p }: { p: ProductCardData }) {
           <span className="absolute top-3 right-3 px-2 py-1 rounded-md text-xs font-bold gradient-gold text-primary shadow-luxe">خصم خاص</span>
         )}
         {p.stock === 0 && (
-          <span className="absolute top-3 left-3 px-2 py-1 rounded-md text-xs font-bold bg-destructive text-destructive-foreground">نفدت</span>
+          <span className="absolute top-3 left-3 px-2 py-1 rounded-md text-xs font-bold bg-destructive text-destructive-foreground">نفذ المخزون ⚠️</span>
         )}
         {p.stock > 0 && (
           <button
@@ -57,6 +57,9 @@ export function ProductCard({ p }: { p: ProductCardData }) {
       <div className="p-4">
         <div className="text-xs text-muted-foreground mb-1">{catAr(p.category)}</div>
         <div className="font-semibold line-clamp-1">{p.name}</div>
+        {p.stock === 0 && (
+          <div className="text-xs font-bold text-red-600 mt-0.5">هيتوفر قريباً</div>
+        )}
         <div className="mt-2 flex items-baseline gap-2">
           {hasDiscount ? (
             <>

@@ -120,6 +120,68 @@ function TryOn() {
         </div>
       </div>
 
+      {/* 3-Step Try-On Stepper */}
+      <div className="max-w-3xl mx-auto mb-10 bg-card border border-gold-gradient/10 p-5 rounded-3xl shadow-sm">
+        <div className="flex items-center justify-between relative">
+          
+          {/* Line Connecting Steps */}
+          <div className="absolute top-1/2 left-4 right-4 h-0.5 -translate-y-1/2 bg-muted -z-0" />
+          
+          {/* Step 1 */}
+          <div className="flex flex-col items-center z-10 bg-card px-2">
+            <div className={`size-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
+              personUrl 
+                ? "bg-green-500 text-white" 
+                : "bg-gold-gradient text-primary font-black scale-110 shadow-luxe"
+            }`}>
+              {personUrl ? "✓" : "١"}
+            </div>
+            <span className={`text-xs font-bold mt-2 ${personUrl ? "text-green-600 font-bold" : "text-gold-gradient font-black"}`}>ارفع صورتك</span>
+          </div>
+
+          {/* Step 2 */}
+          <div className="flex flex-col items-center z-10 bg-card px-2">
+            <div className={`size-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
+              !personUrl 
+                ? "bg-muted text-muted-foreground" 
+                : selected.length > 0 
+                  ? "bg-green-500 text-white" 
+                  : "bg-gold-gradient text-primary font-black scale-110 shadow-luxe"
+            }`}>
+              {personUrl && selected.length > 0 ? "✓" : "٢"}
+            </div>
+            <span className={`text-xs font-bold mt-2 ${
+              !personUrl 
+                ? "text-muted-foreground" 
+                : selected.length > 0 
+                  ? "text-green-600 font-bold" 
+                  : "text-gold-gradient font-black"
+            }`}>اختار القطع</span>
+          </div>
+
+          {/* Step 3 */}
+          <div className="flex flex-col items-center z-10 bg-card px-2">
+            <div className={`size-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
+              !personUrl || selected.length === 0 
+                ? "bg-muted text-muted-foreground" 
+                : resultUrl 
+                  ? "bg-green-500 text-white" 
+                  : "bg-gold-gradient text-primary font-black scale-110 shadow-luxe animate-pulse"
+            }`}>
+              {resultUrl ? "✓" : "٣"}
+            </div>
+            <span className={`text-xs font-bold mt-2 ${
+              !personUrl || selected.length === 0 
+                ? "text-muted-foreground" 
+                : resultUrl 
+                  ? "text-green-600 font-bold" 
+                  : "text-gold-gradient font-black"
+            }`}>شوف النتيجة</span>
+          </div>
+
+        </div>
+      </div>
+
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="rounded-2xl border bg-card p-5 space-y-4">
           <div>

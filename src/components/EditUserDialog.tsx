@@ -7,6 +7,14 @@ import { Edit, Save, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
+const ROLES = ["admin", "vendor", "customer", "delivery"] as const;
+const ROLES_AR: Record<string, string> = {
+  admin: "مدير",
+  vendor: "تاجر",
+  customer: "عميل",
+  delivery: "مندوب"
+};
+
 export function EditUserDialog({ user, onClose }: { user: any, onClose: () => void }) {
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
@@ -15,51 +23,102 @@ export function EditUserDialog({ user, onClose }: { user: any, onClose: () => vo
     phone: user.phone || "",
     full_name: user.full_name || "",
   });
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(user.roles || []);
+
+  const handleRoleToggle = (r: string) => {
+    setSelectedRoles(prev => 
+      prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r]
+    );
+  };
 
   const handleSave = async () => {
     if (!form.username) return toast.error("اليوزر نيم مطلوب");
     
     setLoading(true);
-    const { error } = await supabase.from("profiles").update({
-      username: form.username,
-      phone: form.phone || null,
-      full_name: form.full_name || null,
+    
+    // 1. Update Profile Information
+    const { error: profileError } = await supabase.from("profiles").update({
+      username: form.username.trim(),
+      phone: form.phone.trim() || null,
+      full_name: form.full_name.trim() || null,
     }).eq("id", user.id);
 
-    setLoading(false);
-
-    if (error) {
-      if (error.code === "23505") toast.error("اليوزر نيم مستخدم من قبل");
-      else toast.error("خطأ في الحفظ: " + error.message);
-    } else {
-      toast.success("تم تحديث بيانات المستخدم ✅");
-      qc.invalidateQueries({ queryKey: ["admin-profiles"] });
-      onClose();
+    if (profileError) {
+      setLoading(false);
+      if (profileError.code === "23505") return toast.error("اليوزر نيم مستخدم من قبل");
+      return toast.error("خطأ في حفظ الملف الشخصي: " + profileError.message);
     }
+
+    // 2. Update Roles (Sync with user_roles table)
+    const { error: deleteRolesError } = await supabase.from("user_roles").delete().eq("user_id", user.id);
+    if (deleteRolesError) {
+      setLoading(false);
+      return toast.error("خطأ في تحديث الصلاحيات: " + deleteRolesError.message);
+    }
+
+    if (selectedRoles.length > 0) {
+      const inserts = selectedRoles.map(r => ({ user_id: user.id, role: r }));
+      const { error: insertRolesError } = await supabase.from("user_roles").insert(inserts);
+      if (insertRolesError) {
+        setLoading(false);
+        return toast.error("خطأ في إدخال الصلاحيات الجديدة: " + insertRolesError.message);
+      }
+    }
+
+    setLoading(false);
+    toast.success("تم تحديث بيانات وصلاحيات المستخدم بنجاح ✅");
+    qc.invalidateQueries({ queryKey: ["admin-profiles"] });
+    onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card w-full max-w-md rounded-2xl p-6 shadow-luxe relative">
+      <div className="bg-card w-full max-w-md rounded-3xl p-6 shadow-luxe border border-gold-gradient/10 relative">
         <button onClick={onClose} className="absolute top-4 left-4 text-muted-foreground hover:text-foreground">
           <X className="size-5" />
         </button>
-        <h3 className="font-bold text-lg mb-5 flex items-center gap-2"><Edit className="size-5" /> تعديل بيانات المستخدم</h3>
+        <h3 className="font-bold text-lg mb-5 flex items-center gap-2 text-gold-gradient">
+          <Edit className="size-5" /> تعديل بيانات وصلاحيات المستخدم
+        </h3>
         
         <div className="space-y-4">
           <div>
-            <Label>اليوزر نيم</Label>
-            <Input value={form.username} onChange={e => setForm({...form, username: e.target.value})} dir="ltr" className="text-left" />
+            <Label className="font-bold">اليوزر نيم</Label>
+            <Input value={form.username} onChange={e => setForm({...form, username: e.target.value})} dir="ltr" className="text-left rounded-xl border-gold-gradient/20" />
           </div>
           <div>
-            <Label>الاسم الكامل</Label>
-            <Input value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} />
+            <Label className="font-bold">الاسم الكامل</Label>
+            <Input value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} className="rounded-xl border-gold-gradient/20" />
           </div>
           <div>
-            <Label>رقم الموبايل</Label>
-            <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} dir="ltr" className="text-left" />
+            <Label className="font-bold">رقم الموبايل</Label>
+            <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} dir="ltr" className="text-left rounded-xl border-gold-gradient/20" />
           </div>
-          <Button onClick={handleSave} disabled={loading} className="w-full gradient-gold text-primary mt-2">
+
+          <div>
+            <Label className="font-bold block mb-2">تعديل الصلاحيات</Label>
+            <div className="flex flex-wrap gap-2">
+              {ROLES.map((r) => {
+                const has = selectedRoles.includes(r);
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => handleRoleToggle(r)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all ${
+                      has 
+                        ? "gradient-gold text-primary border-transparent shadow-sm" 
+                        : "text-muted-foreground bg-muted/30 border-muted opacity-60 hover:opacity-100"
+                    }`}
+                  >
+                    {ROLES_AR[r]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <Button onClick={handleSave} disabled={loading} className="w-full gradient-gold text-primary mt-4 rounded-xl font-bold shadow-luxe">
             {loading ? <Loader2 className="size-4 animate-spin ml-2" /> : <Save className="size-4 ml-2" />}
             حفظ التعديلات
           </Button>
