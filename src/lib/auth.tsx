@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const shadowBanned = (settings?.quick_links as any)?.__metadata?.banned_users?.[authData.user.id];
 
-      if (profile?.is_banned || shadowBanned) {
+      if ((profile as any)?.is_banned || shadowBanned) {
         await supabase.auth.signOut();
         return { error: "عذراً، هذا الحساب معطل حالياً. يرجى التواصل مع الإدارة." };
       }
