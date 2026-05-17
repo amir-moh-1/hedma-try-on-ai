@@ -87,6 +87,7 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
     if (!confirm("هل أنت متأكد من حذف هذا الحساب نهائياً؟ لا يمكن التراجع عن هذا الإجراء.")) return;
     const { error } = await supabase.from("profiles").delete().eq("id", uid);
     if (error) return toast.error(error.message);
+    if (currentUser) await supabase.from("activity_logs").insert({ user_id: currentUser.id, action: "admin_user_delete", details: { target_user: uid } as never });
     qc.invalidateQueries({ queryKey: ["admin-profiles"] });
     toast.success("تم حذف بيانات المستخدم من النظام");
   };
