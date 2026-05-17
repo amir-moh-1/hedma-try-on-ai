@@ -36,7 +36,7 @@ export function InventoryReportsTab() {
     queryKey: ["admin-vendor-inventory", selectedVendorId, fromDate, toDate],
     enabled: !!selectedVendorId,
     queryFn: async () => {
-      let query = supabase.from("products").select("*").eq("vendor_id", selectedVendorId);
+      let query = supabase.from("products").select("*").eq("vendor_id", selectedVendorId!);
       
       if (fromDate) {
         query = query.gte("created_at", new Date(fromDate).toISOString());

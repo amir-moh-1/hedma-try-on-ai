@@ -23,7 +23,7 @@ export function Footer() {
         <div>
           <h4 className="font-bold mb-3">روابط سريعة</h4>
           <ul className="space-y-2 text-sm">
-            {s.quick_links.map((l) => (
+            {(s.quick_links as any[]).map((l: any) => (
               <li key={l.to + l.label}>
                 <Link to={l.to as any} className="hover:text-gold-gradient">{l.label}</Link>
               </li>
