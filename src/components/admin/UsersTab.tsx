@@ -29,6 +29,7 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
   const setRole = async (uid: string, role: "admin" | "vendor" | "customer" | "delivery", on: boolean) => {
     if (on) await supabase.from("user_roles").insert({ user_id: uid, role });
     else await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", role);
+    if (currentUser) await supabase.from("activity_logs").insert({ user_id: currentUser.id, action: on ? "admin_role_grant" : "admin_role_revoke", details: { target_user: uid, role } as never });
     qc.invalidateQueries({ queryKey: ["admin-profiles"] });
     toast.success("تم تحديث صلاحيات المستخدم بنجاح");
   };
