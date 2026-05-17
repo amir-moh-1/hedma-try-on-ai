@@ -74,6 +74,7 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
     } else {
       toast.success(newStatus ? "تم حظر المستخدم بنجاح" : "تم فك حظر المستخدم");
     }
+    if (currentUser) await supabase.from("activity_logs").insert({ user_id: currentUser.id, action: newStatus ? "admin_user_ban" : "admin_user_unban", details: { target_user: uid } as never });
     
     qc.invalidateQueries({ queryKey: ["admin-profiles"] });
     qc.invalidateQueries({ queryKey: ["site-settings"] });
