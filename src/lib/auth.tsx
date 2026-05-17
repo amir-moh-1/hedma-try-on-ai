@@ -78,6 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    if (authData.user) {
+      await supabase.from("activity_logs").insert({ user_id: authData.user.id, action: "login", details: { username: input } as never });
+    }
     return {};
   };
 
