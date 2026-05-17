@@ -28,7 +28,7 @@ export function ProductControlTab() {
     queryKey: ["admin-vendor-products", selectedVendorId],
     enabled: !!selectedVendorId,
     queryFn: async () => {
-      const { data } = await supabase.from("products").select("*").eq("vendor_id", selectedVendorId).order("created_at", { ascending: false });
+      const { data } = await supabase.from("products").select("*").eq("vendor_id", selectedVendorId!).order("created_at", { ascending: false });
       return data ?? [];
     }
   });
