@@ -45,9 +45,13 @@ function Products() {
     queryKey: ["all-products"],
     queryFn: async () => {
       const { data } = await supabase.from("products")
-        .select("id,name,price,image_url,category,stock,colors,description,created_at,secondary_image_url")
+        .select("id,name,price,image_url,category,stock,colors,description,created_at,variants")
         .eq("active", true);
-      return data ?? [];
+      return (data ?? []).map((p: any) => {
+        const variants = Array.isArray(p.variants) ? p.variants : [];
+        const secondary_image_url = variants.find((v: any) => v?.image_url && v.image_url !== p.image_url)?.image_url ?? null;
+        return { ...p, secondary_image_url };
+      });
     },
   });
 
