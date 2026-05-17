@@ -37,10 +37,12 @@ export function OrdersTab({ profiles }: { profiles: { id: string; username: stri
     }
   
     const { error } = await supabase.from("orders").update(patch).eq("id", id);
-    if (error) toast.error(error.message); else { 
-      toast.success("تم تحديث الطلب"); 
-      qc.invalidateQueries({ queryKey: ["admin-orders"] }); 
-      qc.invalidateQueries({ queryKey: ["admin-products"] }); 
+    if (error) toast.error(error.message); else {
+      const { data: u } = await supabase.auth.getUser();
+      if (u.user) await supabase.from("activity_logs").insert({ user_id: u.user.id, action: "admin_order_update", details: { order_id: id, ...patch } as never });
+      toast.success("تم تحديث الطلب");
+      qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      qc.invalidateQueries({ queryKey: ["admin-products"] });
     }
   };
 

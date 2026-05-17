@@ -78,6 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    if (authData.user) {
+      await supabase.from("activity_logs").insert({ user_id: authData.user.id, action: "login", details: { username: input } as never });
+    }
     return {};
   };
 
@@ -113,10 +116,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    if (authData.user) {
+      await supabase.from("activity_logs").insert({ user_id: authData.user.id, action: "signup", details: { username, phone } as never });
+    }
     return {};
   };
 
-  const signOut = async () => { await supabase.auth.signOut(); };
+  const signOut = async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) await supabase.from("activity_logs").insert({ user_id: data.user.id, action: "logout", details: {} as never });
+    await supabase.auth.signOut();
+  };
 
   const refreshRoles = async () => { if (user) await loadProfileRoles(user.id); };
 
