@@ -7,7 +7,8 @@
 
 @theme inline {
   --font-sans: 'Cairo', system-ui, sans-serif;
-  --font-display: 'Playfair Display', 'Cairo', serif;
+  --font-display: 'Amiri', 'Playfair Display', 'Cairo', serif;
+  --font-serif: 'Amiri', serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
