@@ -86,8 +86,8 @@ function Auth() {
           <TabsContent value="login" className="space-y-4 mt-4">
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <Label>اليوزر نيم أو الإيميل</Label>
-                <Input value={li.u} onChange={(e) => setLi({ ...li, u: e.target.value })} required className="rounded-xl border-gold-gradient/20" />
+                <Label>الاسم الكامل أو اليوزر نيم أو الإيميل</Label>
+                <Input value={li.u} onChange={(e) => setLi({ ...li, u: e.target.value })} required placeholder="مثال: أحمد محمد أو ahmed_m" className="rounded-xl border-gold-gradient/20" />
               </div>
               <div>
                 <Label>الباسورد</Label>
