@@ -4,7 +4,7 @@ import { catAr } from "@/lib/categories";
 import { useCart } from "@/lib/cart";
 import { Plus, Heart } from "lucide-react";
 import { toast } from "sonner";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useWishlistIds, useWishlistToggle } from "@/lib/wishlist";
 
 export type ProductCardData = {
