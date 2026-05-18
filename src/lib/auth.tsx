@@ -15,8 +15,8 @@ type AuthCtx = {
   isVendor: boolean;
   isDelivery: boolean;
   loading: boolean;
-  signIn: (usernameOrEmail: string, password: string) => Promise<{ error?: string }>;
-  signUp: (username: string, password: string, phone: string, full_name: string) => Promise<{ error?: string }>;
+  signIn: (usernameOrEmailOrName: string, password: string) => Promise<{ error?: string }>;
+  signUp: (data: { username: string; password: string; phone: string; full_name: string; email: string }) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
 };
