@@ -15,24 +15,22 @@ function Auth() {
   const nav = useNavigate();
   const [loading, setLoading] = useState(false);
   const [li, setLi] = useState({ u: "", p: "" });
-  const [su, setSu] = useState({ u: "", p: "", phone: "", full_name: "" });
+  const [su, setSu] = useState({ u: "", p: "", phone: "", full_name: "", email: "" });
   
   // Forgot password modal state
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotPhone, setForgotPhone] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); 
-    
-    // [12] Input sanitization and validation
-    const username = li.u.trim().replace(/\s+/g, ' ');
+    e.preventDefault();
+    const ident = li.u.trim().replace(/\s+/g, ' ');
     const password = li.p.trim();
 
-    if (!username) return toast.error("اليوزر نيم أو الإيميل مطلوب ومسافات فارغة غير مسموحة");
-    if (!password) return toast.error("الباسورد مطلوب ومسافات فارغة غير مسموحة");
+    if (!ident) return toast.error("ادخل اليوزر أو الاسم الكامل أو الإيميل");
+    if (!password) return toast.error("الباسورد مطلوب");
 
     setLoading(true);
-    const { error } = await signIn(username, password);
+    const { error } = await signIn(ident, password);
     setLoading(false);
     if (error) return toast.error("بيانات غير صحيحة", { description: error });
     await refreshRoles();
@@ -42,28 +40,20 @@ function Auth() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // [12] Input sanitization and validation
+    const full_name = su.full_name.trim().replace(/\s+/g, ' ');
     const username = su.u.trim().replace(/\s+/g, ' ');
     const password = su.p.trim();
     const phone = su.phone.trim();
-    const fullName = su.full_name.trim().replace(/\s+/g, ' ');
+    const email = su.email.trim().toLowerCase();
 
-    if (!username || username.length < 3) {
-      return toast.error("اليوزر نيم لازم يكون 3 حروف على الأقل وغير فارغ");
-    }
-    if (!password || password.length < 6) {
-      return toast.error("الباسورد لازم 6 حروف على الأقل وغير فارغ");
-    }
-    if (!fullName) {
-      return toast.error("الاسم الكامل مطلوب ولا يمكن أن يكون فارغاً");
-    }
-    if (!phone) {
-      return toast.error("رقم التليفون مطلوب ولا يمكن أن يكون فارغاً");
-    }
-    
+    if (!full_name) return toast.error("الاسم الكامل مطلوب");
+    if (!username || username.length < 3) return toast.error("اليوزر نيم لازم 3 حروف على الأقل");
+    if (!password || password.length < 6) return toast.error("الباسورد لازم 6 حروف على الأقل");
+    if (!phone) return toast.error("رقم التليفون مطلوب");
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast.error("الإيميل مطلوب وبصيغة صحيحة");
+
     setLoading(true);
-    const { error } = await signUp(username, password, phone, fullName);
+    const { error } = await signUp({ username, password, phone, full_name, email });
     setLoading(false);
     if (error) return toast.error("ما قدرناش ننشئ الحساب", { description: error });
     toast.success("تم إنشاء الحساب! 🎉");
@@ -96,8 +86,8 @@ function Auth() {
           <TabsContent value="login" className="space-y-4 mt-4">
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <Label>اليوزر نيم أو الإيميل</Label>
-                <Input value={li.u} onChange={(e) => setLi({ ...li, u: e.target.value })} required className="rounded-xl border-gold-gradient/20" />
+                <Label>الاسم الكامل أو اليوزر نيم أو الإيميل</Label>
+                <Input value={li.u} onChange={(e) => setLi({ ...li, u: e.target.value })} required placeholder="مثال: أحمد محمد أو ahmed_m" className="rounded-xl border-gold-gradient/20" />
               </div>
               <div>
                 <Label>الباسورد</Label>
@@ -124,20 +114,24 @@ function Auth() {
           <TabsContent value="signup" className="space-y-4 mt-4">
             <form onSubmit={handleSignup} className="space-y-4">
               <div>
-                <Label>اليوزر نيم</Label>
-                <Input value={su.u} onChange={(e) => setSu({ ...su, u: e.target.value })} required className="rounded-xl border-gold-gradient/20" />
+                <Label>الاسم الكامل *</Label>
+                <Input value={su.full_name} onChange={(e) => setSu({ ...su, full_name: e.target.value })} required placeholder="أحمد محمد علي" className="rounded-xl border-gold-gradient/20" />
               </div>
               <div>
-                <Label>الاسم الكامل</Label>
-                <Input value={su.full_name} onChange={(e) => setSu({ ...su, full_name: e.target.value })} required placeholder="مثال: أحمد محمد علي" className="rounded-xl border-gold-gradient/20" />
+                <Label>اليوزر نيم *</Label>
+                <Input value={su.u} onChange={(e) => setSu({ ...su, u: e.target.value })} required placeholder="ahmed_m" className="rounded-xl border-gold-gradient/20" />
               </div>
               <div>
-                <Label>رقم التليفون</Label>
-                <Input value={su.phone} onChange={(e) => setSu({ ...su, phone: e.target.value })} required placeholder="01234567890" className="rounded-xl border-gold-gradient/20" />
-              </div>
-              <div>
-                <Label>الباسورد</Label>
+                <Label>كلمة السر *</Label>
                 <Input type="password" value={su.p} onChange={(e) => setSu({ ...su, p: e.target.value })} required className="rounded-xl border-gold-gradient/20" />
+              </div>
+              <div>
+                <Label>رقم الهاتف *</Label>
+                <Input value={su.phone} onChange={(e) => setSu({ ...su, phone: e.target.value })} required placeholder="01234567890" dir="ltr" className="text-left rounded-xl border-gold-gradient/20" />
+              </div>
+              <div>
+                <Label>الإيميل *</Label>
+                <Input type="email" value={su.email} onChange={(e) => setSu({ ...su, email: e.target.value })} required placeholder="you@example.com" dir="ltr" className="text-left rounded-xl border-gold-gradient/20" />
               </div>
               <Button disabled={loading} type="submit" className="w-full gradient-gold text-primary mt-4 rounded-xl font-bold shadow-luxe">
                 {loading ? "..." : "إنشاء حساب"}

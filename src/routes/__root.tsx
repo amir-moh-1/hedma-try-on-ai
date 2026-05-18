@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider, useAuth as useAuthCtx } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import { Header } from "@/components/Header";
 import { PromoBar } from "@/components/PromoBar";
@@ -134,6 +134,56 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuthCtx();
+  const router = useRouter();
+  const path = router.state.location.pathname;
+  const isAuthRoute = path === "/auth";
+
+  useEffect(() => {
+    if (loading) return;
+    if (!session && !isAuthRoute) {
+      router.navigate({ to: "/auth", replace: true });
+    }
+  }, [session, loading, isAuthRoute, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background">
+        <div className="text-sm font-bold text-gold-gradient animate-pulse">جاري التحميل...</div>
+      </div>
+    );
+  }
+
+  if (!session && !isAuthRoute) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background">
+        <div className="text-sm font-bold text-muted-foreground animate-pulse">جاري تحويلك لتسجيل الدخول...</div>
+      </div>
+    );
+  }
+
+  if (!session && isAuthRoute) {
+    // Render only the auth page, no chrome
+    return <main className="min-h-screen">{children}</main>;
+  }
+
+  return (
+    <>
+      <div className="min-h-screen flex flex-col font-sans transition-colors duration-300">
+        <PromoBar />
+        <Header />
+        <main className="flex-1 pb-16 md:pb-0">{children}</main>
+        <Footer />
+        <BottomNav />
+      </div>
+      <FloatingWhatsApp />
+      <SocialProofPopup />
+      <NotificationPrompt />
+    </>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
@@ -142,16 +192,9 @@ function RootComponent() {
         <AuthProvider>
           <CartProvider>
             <BrandingMeta />
-            <div className="min-h-screen flex flex-col font-sans transition-colors duration-300">
-              <PromoBar />
-              <Header />
-              <main className="flex-1 pb-16 md:pb-0"><Outlet /></main>
-              <Footer />
-              <BottomNav />
-            </div>
-            <FloatingWhatsApp />
-            <SocialProofPopup />
-            <NotificationPrompt />
+            <AuthGuard>
+              <Outlet />
+            </AuthGuard>
             <Toaster richColors position="top-center" />
           </CartProvider>
         </AuthProvider>

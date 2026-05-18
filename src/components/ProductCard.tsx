@@ -4,7 +4,8 @@ import { catAr } from "@/lib/categories";
 import { useCart } from "@/lib/cart";
 import { Plus, Heart } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useWishlistIds, useWishlistToggle } from "@/lib/wishlist";
 
 export type ProductCardData = {
   id: string;
@@ -23,51 +24,43 @@ export function ProductCard({ p }: { p: ProductCardData }) {
   const finalPrice = hasDiscount ? p.discountedPrice! : p.price;
   const { add } = useCart();
 
-  // Wishlist state and handler
-  const [inWishlist, setInWishlist] = useState<boolean>(() => {
-    try {
-      const list = JSON.parse(localStorage.getItem("hedma-wishlist") || "[]");
-      return list.includes(p.id);
-    } catch {
-      return false;
-    }
-  });
+  // Wishlist via Supabase
+  const { data: wishlistIds } = useWishlistIds();
+  const toggleWishlist = useWishlistToggle();
+  const inWishlist = !!wishlistIds?.has(p.id);
 
-  const toggleWishlist = (e: React.MouseEvent) => {
+  const onHeartClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    try {
-      const list = JSON.parse(localStorage.getItem("hedma-wishlist") || "[]");
-      let newList;
-      if (list.includes(p.id)) {
-        newList = list.filter((id: string) => id !== p.id);
-        setInWishlist(false);
-        toast.success("تم الحذف من المفضلة ❤️");
-      } else {
-        newList = [...list, p.id];
-        setInWishlist(true);
-        toast.success("تم الإضافة للمفضلة ❤️");
-      }
-      localStorage.setItem("hedma-wishlist", JSON.stringify(newList));
-    } catch (err) {
-      console.error(err);
-    }
+    toggleWishlist(p.id, inWishlist);
   };
 
-  // Mobile Swipe states & handlers
-  const [activeMobileImg, setActiveMobileImg] = useState<number>(0);
-  let touchStartX = 0;
+  // Build image carousel from main + secondary
+  const images = [p.image_url, p.secondary_image_url].filter(Boolean) as string[];
+  const [activeImg, setActiveImg] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const cardRef = useRef<HTMLAnchorElement>(null);
 
+  // Auto-scroll every 2.5s when multiple images and not paused
+  useEffect(() => {
+    if (images.length < 2 || paused) return;
+    const id = setInterval(() => {
+      setActiveImg((prev) => (prev + 1) % images.length);
+    }, 2500);
+    return () => clearInterval(id);
+  }, [images.length, paused]);
+
+  let touchStartX = 0;
   const handleTouchStart = (e: React.TouchEvent) => {
+    setPaused(true);
     touchStartX = e.touches[0].clientX;
   };
-
   const handleTouchEnd = (e: React.TouchEvent) => {
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX - touchEndX;
-    if (Math.abs(diff) > 40 && p.secondary_image_url) {
-      setActiveMobileImg((prev) => (prev === 0 ? 1 : 0));
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40 && images.length > 1) {
+      setActiveImg((prev) => (prev + 1) % images.length);
     }
+    setTimeout(() => setPaused(false), 1500);
   };
 
   const quickAdd = (e: React.MouseEvent) => {
@@ -89,54 +82,41 @@ export function ProductCard({ p }: { p: ProductCardData }) {
       to="/product/$id" params={{ id: p.id }}
       className="group block rounded-2xl overflow-hidden bg-card border hover:shadow-luxe transition-all duration-300 relative"
     >
-      <div 
+      <div
         className="aspect-[4/5] overflow-hidden bg-muted relative"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Images: Desktop double-image smooth hover & Mobile active touch preview */}
-        {p.image_url ? (
-          <>
-            {/* Main Image */}
-            <img 
-              src={p.image_url} 
-              alt={p.name} 
+        {images.length > 0 ? (
+          images.map((src, i) => (
+            <img
+              key={src + i}
+              src={src}
+              alt={p.name}
               loading="lazy"
-              className={`size-full object-cover transition-all duration-700 md:group-hover:opacity-0 ${
-                activeMobileImg === 0 ? "opacity-100" : "opacity-0 md:opacity-100"
-              }`} 
+              className={`absolute inset-0 size-full object-cover transition-opacity duration-700 ${activeImg === i ? "opacity-100" : "opacity-0"}`}
             />
-            {/* Secondary Image on Hover/Swipe */}
-            {p.secondary_image_url && (
-              <img 
-                src={p.secondary_image_url} 
-                alt={p.name} 
-                loading="lazy"
-                className={`absolute inset-0 size-full object-cover transition-all duration-700 opacity-0 md:group-hover:opacity-100 ${
-                  activeMobileImg === 1 ? "opacity-100" : "opacity-0"
-                }`} 
-              />
-            )}
-          </>
+          ))
         ) : (
           <div className="size-full grid place-items-center text-muted-foreground">لا توجد صورة</div>
         )}
 
-        {/* Mobile Swipe Dot Indicators */}
-        {p.secondary_image_url && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10 md:hidden bg-black/40 px-2 py-0.5 rounded-full">
-            <span className={`size-1.5 rounded-full transition-all duration-300 ${activeMobileImg === 0 ? "bg-[#D4A017] scale-125" : "bg-[#F5F0E8]/50"}`} />
-            <span className={`size-1.5 rounded-full transition-all duration-300 ${activeMobileImg === 1 ? "bg-[#D4A017] scale-125" : "bg-[#F5F0E8]/50"}`} />
+        {images.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10 bg-black/40 px-2 py-0.5 rounded-full">
+            {images.map((_, i) => (
+              <span key={i} className={`size-1.5 rounded-full transition-all duration-300 ${activeImg === i ? "bg-[#D4A017] scale-125" : "bg-[#F5F0E8]/50"}`} />
+            ))}
           </div>
         )}
 
-        {/* Wishlist ❤️ Button */}
         <button
-          onClick={toggleWishlist}
+          onClick={onHeartClick}
           aria-label="أضف للمفضلة"
           className="absolute top-3 right-3 z-20 grid place-items-center size-8 rounded-full bg-card/80 backdrop-blur-sm text-foreground shadow-md hover:scale-110 active:scale-95 transition"
         >
-          <Heart className={`size-4.5 transition-colors ${inWishlist ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"}`} />
+          <Heart className={`size-4 transition-colors ${inWishlist ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"}`} />
         </button>
 
         {/* Corner Badges */}
