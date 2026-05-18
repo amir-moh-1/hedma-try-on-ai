@@ -82,54 +82,42 @@ export function ProductCard({ p }: { p: ProductCardData }) {
       to="/product/$id" params={{ id: p.id }}
       className="group block rounded-2xl overflow-hidden bg-card border hover:shadow-luxe transition-all duration-300 relative"
     >
-      <div 
+      <div
+        ref={cardRef as any}
         className="aspect-[4/5] overflow-hidden bg-muted relative"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Images: Desktop double-image smooth hover & Mobile active touch preview */}
-        {p.image_url ? (
-          <>
-            {/* Main Image */}
-            <img 
-              src={p.image_url} 
-              alt={p.name} 
+        {images.length > 0 ? (
+          images.map((src, i) => (
+            <img
+              key={src + i}
+              src={src}
+              alt={p.name}
               loading="lazy"
-              className={`size-full object-cover transition-all duration-700 md:group-hover:opacity-0 ${
-                activeMobileImg === 0 ? "opacity-100" : "opacity-0 md:opacity-100"
-              }`} 
+              className={`absolute inset-0 size-full object-cover transition-opacity duration-700 ${activeImg === i ? "opacity-100" : "opacity-0"}`}
             />
-            {/* Secondary Image on Hover/Swipe */}
-            {p.secondary_image_url && (
-              <img 
-                src={p.secondary_image_url} 
-                alt={p.name} 
-                loading="lazy"
-                className={`absolute inset-0 size-full object-cover transition-all duration-700 opacity-0 md:group-hover:opacity-100 ${
-                  activeMobileImg === 1 ? "opacity-100" : "opacity-0"
-                }`} 
-              />
-            )}
-          </>
+          ))
         ) : (
           <div className="size-full grid place-items-center text-muted-foreground">لا توجد صورة</div>
         )}
 
-        {/* Mobile Swipe Dot Indicators */}
-        {p.secondary_image_url && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10 md:hidden bg-black/40 px-2 py-0.5 rounded-full">
-            <span className={`size-1.5 rounded-full transition-all duration-300 ${activeMobileImg === 0 ? "bg-[#D4A017] scale-125" : "bg-[#F5F0E8]/50"}`} />
-            <span className={`size-1.5 rounded-full transition-all duration-300 ${activeMobileImg === 1 ? "bg-[#D4A017] scale-125" : "bg-[#F5F0E8]/50"}`} />
+        {images.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10 bg-black/40 px-2 py-0.5 rounded-full">
+            {images.map((_, i) => (
+              <span key={i} className={`size-1.5 rounded-full transition-all duration-300 ${activeImg === i ? "bg-[#D4A017] scale-125" : "bg-[#F5F0E8]/50"}`} />
+            ))}
           </div>
         )}
 
-        {/* Wishlist ❤️ Button */}
         <button
-          onClick={toggleWishlist}
+          onClick={onHeartClick}
           aria-label="أضف للمفضلة"
           className="absolute top-3 right-3 z-20 grid place-items-center size-8 rounded-full bg-card/80 backdrop-blur-sm text-foreground shadow-md hover:scale-110 active:scale-95 transition"
         >
-          <Heart className={`size-4.5 transition-colors ${inWishlist ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"}`} />
+          <Heart className={`size-4 transition-colors ${inWishlist ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"}`} />
         </button>
 
         {/* Corner Badges */}
