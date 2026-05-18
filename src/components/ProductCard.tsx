@@ -83,7 +83,6 @@ export function ProductCard({ p }: { p: ProductCardData }) {
       className="group block rounded-2xl overflow-hidden bg-card border hover:shadow-luxe transition-all duration-300 relative"
     >
       <div
-        ref={cardRef as any}
         className="aspect-[4/5] overflow-hidden bg-muted relative"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
