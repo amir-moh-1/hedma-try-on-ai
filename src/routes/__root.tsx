@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider, useAuth as useAuthCtx } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import { Header } from "@/components/Header";
 import { PromoBar } from "@/components/PromoBar";
