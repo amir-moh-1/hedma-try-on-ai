@@ -24,51 +24,43 @@ export function ProductCard({ p }: { p: ProductCardData }) {
   const finalPrice = hasDiscount ? p.discountedPrice! : p.price;
   const { add } = useCart();
 
-  // Wishlist state and handler
-  const [inWishlist, setInWishlist] = useState<boolean>(() => {
-    try {
-      const list = JSON.parse(localStorage.getItem("hedma-wishlist") || "[]");
-      return list.includes(p.id);
-    } catch {
-      return false;
-    }
-  });
+  // Wishlist via Supabase
+  const { data: wishlistIds } = useWishlistIds();
+  const toggleWishlist = useWishlistToggle();
+  const inWishlist = !!wishlistIds?.has(p.id);
 
-  const toggleWishlist = (e: React.MouseEvent) => {
+  const onHeartClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    try {
-      const list = JSON.parse(localStorage.getItem("hedma-wishlist") || "[]");
-      let newList;
-      if (list.includes(p.id)) {
-        newList = list.filter((id: string) => id !== p.id);
-        setInWishlist(false);
-        toast.success("تم الحذف من المفضلة ❤️");
-      } else {
-        newList = [...list, p.id];
-        setInWishlist(true);
-        toast.success("تم الإضافة للمفضلة ❤️");
-      }
-      localStorage.setItem("hedma-wishlist", JSON.stringify(newList));
-    } catch (err) {
-      console.error(err);
-    }
+    toggleWishlist(p.id, inWishlist);
   };
 
-  // Mobile Swipe states & handlers
-  const [activeMobileImg, setActiveMobileImg] = useState<number>(0);
-  let touchStartX = 0;
+  // Build image carousel from main + secondary
+  const images = [p.image_url, p.secondary_image_url].filter(Boolean) as string[];
+  const [activeImg, setActiveImg] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const cardRef = useRef<HTMLAnchorElement>(null);
 
+  // Auto-scroll every 2.5s when multiple images and not paused
+  useEffect(() => {
+    if (images.length < 2 || paused) return;
+    const id = setInterval(() => {
+      setActiveImg((prev) => (prev + 1) % images.length);
+    }, 2500);
+    return () => clearInterval(id);
+  }, [images.length, paused]);
+
+  let touchStartX = 0;
   const handleTouchStart = (e: React.TouchEvent) => {
+    setPaused(true);
     touchStartX = e.touches[0].clientX;
   };
-
   const handleTouchEnd = (e: React.TouchEvent) => {
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX - touchEndX;
-    if (Math.abs(diff) > 40 && p.secondary_image_url) {
-      setActiveMobileImg((prev) => (prev === 0 ? 1 : 0));
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40 && images.length > 1) {
+      setActiveImg((prev) => (prev + 1) % images.length);
     }
+    setTimeout(() => setPaused(false), 1500);
   };
 
   const quickAdd = (e: React.MouseEvent) => {
