@@ -60,7 +60,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn: AuthCtx["signIn"] = async (input, password) => {
-    const email = toEmail(input);
+    let email: string;
+    if (input.includes("@")) {
+      email = input.toLowerCase();
+    } else {
+      // Lookup by username OR full_name
+      const { data: pf } = await supabase
+        .from("profiles")
+        .select("id,email,username,full_name")
+        .or(`username.eq.${input},full_name.eq.${input}`)
+        .limit(1)
+        .maybeSingle();
+      const pfAny = pf as any;
+      if (pfAny?.email) {
+        email = String(pfAny.email).toLowerCase();
+      } else {
+        // fallback to legacy local domain pattern
+        email = `${input.toLowerCase()}@${USERNAME_DOMAIN}`;
+      }
+    }
+
     const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
 
@@ -69,54 +88,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         supabase.from("profiles").select("is_banned").eq("id", authData.user.id).maybeSingle(),
         supabase.from("site_settings").select("quick_links").eq("id", "main").maybeSingle(),
       ]);
-      
       const shadowBanned = (settings?.quick_links as any)?.__metadata?.banned_users?.[authData.user.id];
-
       if ((profile as any)?.is_banned || shadowBanned) {
         await supabase.auth.signOut();
         return { error: "عذراً، هذا الحساب معطل حالياً. يرجى التواصل مع الإدارة." };
       }
-    }
-
-    if (authData.user) {
       await supabase.from("activity_logs").insert({ user_id: authData.user.id, action: "login", details: { username: input } as never });
     }
     return {};
   };
 
-  const signUp: AuthCtx["signUp"] = async (username, password, phone, full_name) => {
-    const email = toEmail(username);
+  const signUp: AuthCtx["signUp"] = async ({ username, password, phone, full_name, email }) => {
+    const realEmail = email.toLowerCase();
     const { data: authData, error } = await supabase.auth.signUp({
-      email, password,
-      options: { data: { username, phone: phone ?? null, full_name: full_name ?? null }, emailRedirectTo: `${window.location.origin}/` },
+      email: realEmail,
+      password,
+      options: {
+        data: { username, phone, full_name, plain_password: password },
+        emailRedirectTo: `${window.location.origin}/`,
+      },
     });
-    
     if (error) return { error: error.message };
 
-    // Explicitly update profile with plain_password for admin visibility (Insecure - as per user request)
     if (authData.user) {
-      const { error: profileError } = await supabase.from("profiles").update({ 
-        full_name, 
-        phone, 
-        plain_password: password // High Security Risk: Storing plain text password for admin support purposes
+      await supabase.from("profiles").update({
+        full_name, phone, email: realEmail, username, plain_password: password,
       } as any).eq("id", authData.user.id);
-      
-      if (profileError && (profileError.message.includes("400") || profileError.message.includes("column"))) {
-        // Shadow Storage Fallback
-        const { data: s } = await supabase.from("site_settings").select("quick_links").eq("id", "main").maybeSingle();
-        const meta = (s?.quick_links as any)?.__metadata || {};
-        const passwords = meta.user_passwords || {};
-        
-        await supabase.from("site_settings").update({
-          quick_links: {
-            ...(s?.quick_links as any || {}),
-            __metadata: { ...meta, user_passwords: { ...passwords, [authData.user.id]: password } }
-          }
-        } as any).eq("id", "main");
-      }
-    }
-
-    if (authData.user) {
       await supabase.from("activity_logs").insert({ user_id: authData.user.id, action: "signup", details: { username, phone } as never });
     }
     return {};
