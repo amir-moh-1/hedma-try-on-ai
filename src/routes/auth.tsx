@@ -114,20 +114,24 @@ function Auth() {
           <TabsContent value="signup" className="space-y-4 mt-4">
             <form onSubmit={handleSignup} className="space-y-4">
               <div>
-                <Label>اليوزر نيم</Label>
-                <Input value={su.u} onChange={(e) => setSu({ ...su, u: e.target.value })} required className="rounded-xl border-gold-gradient/20" />
+                <Label>الاسم الكامل *</Label>
+                <Input value={su.full_name} onChange={(e) => setSu({ ...su, full_name: e.target.value })} required placeholder="أحمد محمد علي" className="rounded-xl border-gold-gradient/20" />
               </div>
               <div>
-                <Label>الاسم الكامل</Label>
-                <Input value={su.full_name} onChange={(e) => setSu({ ...su, full_name: e.target.value })} required placeholder="مثال: أحمد محمد علي" className="rounded-xl border-gold-gradient/20" />
+                <Label>اليوزر نيم *</Label>
+                <Input value={su.u} onChange={(e) => setSu({ ...su, u: e.target.value })} required placeholder="ahmed_m" className="rounded-xl border-gold-gradient/20" />
               </div>
               <div>
-                <Label>رقم التليفون</Label>
-                <Input value={su.phone} onChange={(e) => setSu({ ...su, phone: e.target.value })} required placeholder="01234567890" className="rounded-xl border-gold-gradient/20" />
-              </div>
-              <div>
-                <Label>الباسورد</Label>
+                <Label>كلمة السر *</Label>
                 <Input type="password" value={su.p} onChange={(e) => setSu({ ...su, p: e.target.value })} required className="rounded-xl border-gold-gradient/20" />
+              </div>
+              <div>
+                <Label>رقم الهاتف *</Label>
+                <Input value={su.phone} onChange={(e) => setSu({ ...su, phone: e.target.value })} required placeholder="01234567890" dir="ltr" className="text-left rounded-xl border-gold-gradient/20" />
+              </div>
+              <div>
+                <Label>الإيميل *</Label>
+                <Input type="email" value={su.email} onChange={(e) => setSu({ ...su, email: e.target.value })} required placeholder="you@example.com" dir="ltr" className="text-left rounded-xl border-gold-gradient/20" />
               </div>
               <Button disabled={loading} type="submit" className="w-full gradient-gold text-primary mt-4 rounded-xl font-bold shadow-luxe">
                 {loading ? "..." : "إنشاء حساب"}
