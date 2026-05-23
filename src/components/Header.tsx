@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { Button } from "./ui/button";
 import { NotificationBell } from "./NotificationBell";
+import { UserNotificationBell } from "./UserNotificationBell";
 import { ShoppingBag, Heart, User, LayoutDashboard, LogOut, Sparkles, Store, Truck, Package, Settings, Moon, Sun } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "./ui/dropdown-menu";
 import { useTheme } from "./ThemeProvider";
@@ -36,7 +37,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-xl">
-      <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between gap-4">
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
         <Logo />
         <nav className="hidden md:flex items-center gap-5 text-sm font-medium">
           <Link to="/" className="hover:text-gold-gradient transition" activeProps={{ className: "text-foreground font-bold" }}>الرئيسية</Link>
@@ -47,31 +48,38 @@ export function Header() {
           <Link to="/customers" className="hover:text-gold-gradient transition">زبايننا</Link>
           <Link to="/our-story" className="hover:text-gold-gradient transition">قصتنا</Link>
         </nav>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Toggle theme">
-            {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Button variant="ghost" size="icon" className="size-8 sm:size-9" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Toggle theme">
+            {theme === "dark" ? <Sun className="size-4 sm:size-5" /> : <Moon className="size-4 sm:size-5" />}
           </Button>
+          {/* [4] Admin notification bell (global notifications) */}
           {isAdmin && <NotificationBell />}
-          <Button variant="ghost" size="icon" onClick={() => nav({ to: "/wishlist" })} aria-label="المفضلة" className="relative">
-            <Heart className="size-5" />
+          {/* [4] User notification bell (per-user notifications from admin) */}
+          {user && <UserNotificationBell />}
+          <Button variant="ghost" size="icon" className="relative size-8 sm:size-9" onClick={() => nav({ to: "/wishlist" })} aria-label="المفضلة">
+            <Heart className="size-4 sm:size-5" />
             {wishlistCount > 0 && (
-              <span className="absolute -top-1 -left-1 grid place-items-center min-w-5 h-5 px-1 rounded-full text-[11px] font-bold bg-red-500 text-white">{wishlistCount}</span>
+              <span className="absolute -top-1 -left-1 grid place-items-center min-w-4 h-4 sm:min-w-5 sm:h-5 px-0.5 sm:px-1 rounded-full text-[10px] sm:text-[11px] font-bold bg-red-500 text-white">{wishlistCount}</span>
             )}
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => nav({ to: "/cart" })} aria-label="السلة" className="relative">
-            <ShoppingBag className="size-5" />
+          <Button variant="ghost" size="icon" className="relative size-8 sm:size-9" onClick={() => nav({ to: "/cart" })} aria-label="السلة">
+            <ShoppingBag className="size-4 sm:size-5" />
             {count > 0 && (
-              <span className="absolute -top-1 -left-1 grid place-items-center min-w-5 h-5 px-1 rounded-full text-[11px] font-bold gradient-gold text-primary">{count}</span>
+              <span className="absolute -top-1 -left-1 grid place-items-center min-w-4 h-4 sm:min-w-5 sm:h-5 px-0.5 sm:px-1 rounded-full text-[10px] sm:text-[11px] font-bold gradient-gold text-primary">{count}</span>
             )}
           </Button>
           {!user ? (
-            <Button onClick={() => nav({ to: "/auth" })} className="gradient-gold text-primary hover:opacity-90">دخول</Button>
+            <Button onClick={() => nav({ to: "/auth" })} className="gradient-gold text-primary hover:opacity-90 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9">دخول</Button>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2"><User className="size-4" />{profile?.username ?? "حسابي"}</Button>
+                <Button variant="outline" className="gap-1 sm:gap-2 text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3">
+                  <User className="size-3.5 sm:size-4" />
+                  <span className="hidden sm:inline max-w-[80px] truncate">{profile?.username ?? "حسابي"}</span>
+                  <span className="sm:hidden">حسابي</span>
+                </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuContent align="start" className="w-52 sm:w-56">
                 {isAdmin && (
                   <DropdownMenuItem onClick={() => nav({ to: "/admin" })}><LayoutDashboard className="size-4 ml-2" /> لوحة المدير</DropdownMenuItem>
                 )}

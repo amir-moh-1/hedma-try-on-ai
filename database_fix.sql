@@ -156,3 +156,44 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- 8. Enable new columns in password_recovery_requests
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='password_recovery_requests' AND column_name='method') THEN
+        ALTER TABLE password_recovery_requests ADD COLUMN method TEXT DEFAULT 'whatsapp';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='password_recovery_requests' AND column_name='email') THEN
+        ALTER TABLE password_recovery_requests ADD COLUMN email TEXT;
+    END IF;
+END $$;
+
+
+-- 9. Create user_notifications Table
+CREATE TABLE IF NOT EXISTS public.user_notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    content TEXT,
+    read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS on user_notifications
+ALTER TABLE public.user_notifications ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist to avoid conflict
+DROP POLICY IF EXISTS "Users can read own notifications" ON public.user_notifications;
+DROP POLICY IF EXISTS "Users can update own notifications" ON public.user_notifications;
+DROP POLICY IF EXISTS "Admins can insert notifications" ON public.user_notifications;
+
+-- Create Policies
+CREATE POLICY "Users can read own notifications" ON public.user_notifications
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own notifications" ON public.user_notifications
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can insert notifications" ON public.user_notifications
+    FOR INSERT WITH CHECK (true);

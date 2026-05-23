@@ -24,6 +24,7 @@ import { VendorInsightsTab } from "@/components/admin/VendorInsightsTab";
 import { ProductControlTab } from "@/components/admin/ProductControlTab";
 import { InventoryReportsTab } from "@/components/admin/InventoryReportsTab";
 import { PasswordRecoveryTab } from "@/components/admin/PasswordRecoveryTab";
+import { NotificationsTab } from "@/components/admin/NotificationsTab";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
 
@@ -54,7 +55,7 @@ function AdminPanel() {
   const { data: products } = useQuery({
     queryKey: ["admin-products"], enabled: isAdmin,
     queryFn: async () => {
-      const { data } = await supabase.from("products").select("id,name,price,category,stock,active,vendor_id,created_at").order("created_at",{ascending:false});
+      const { data } = await supabase.from("products").select("id,name,price,category,stock,active,vendor_id,created_at,image_url").order("created_at",{ascending:false});
       const ids = Array.from(new Set((data ?? []).map((p) => p.vendor_id)));
       const { data: profs } = ids.length ? await supabase.from("profiles").select("id,username").in("id", ids) : { data: [] };
       const m = new Map((profs ?? []).map((p) => [p.id, p.username]));
@@ -71,7 +72,7 @@ function AdminPanel() {
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto bg-muted/5 custom-scrollbar">
-        <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b px-8 py-6 flex items-center justify-between">
+        <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b px-4 md:px-8 py-4 md:py-6 flex items-center justify-between">
           <div>
             <h1 className="font-display text-3xl font-black uppercase tracking-tight">
               {activeTab === "dashboard" && "لوحة التحكم"}
@@ -81,6 +82,7 @@ function AdminPanel() {
               {activeTab === "merchants" && "المحلات والتجار"}
               {activeTab === "users" && "المستخدمين والصلاحيات"}
               {activeTab === "recovery" && "استعادة الحسابات"}
+              {activeTab === "notifications" && "📢 إرسال إشعار"}
               {activeTab === "customers" && "قاعدة العملاء"}
               {activeTab === "inventory" && "الجرد والتقارير"}
               {activeTab === "vendor-insights" && "تحليل أداء التجار"}
@@ -97,7 +99,7 @@ function AdminPanel() {
           </div>
         </header>
 
-        <div className="p-8">
+        <div className="p-4 md:p-8">
           {activeTab === "dashboard" && <DashboardTab />}
           {activeTab === "orders" && <OrdersTab profiles={profiles ?? []} />}
           {activeTab === "merchants" && <MerchantsTab profiles={profiles ?? []} />}
@@ -134,6 +136,12 @@ function AdminPanel() {
           {activeTab === "recovery" && (
              <div className="space-y-6 animate-in fade-in duration-500">
                <PasswordRecoveryTab />
+             </div>
+          )}
+
+          {activeTab === "notifications" && (
+             <div className="space-y-6 animate-in fade-in duration-500">
+               <NotificationsTab />
              </div>
           )}
 

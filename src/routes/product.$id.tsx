@@ -322,7 +322,7 @@ function ProductDetail() {
           </div>
           <div className="flex gap-4 overflow-x-auto whitespace-nowrap scrollbar-none pb-4 select-none max-w-full">
             {completeTheLook.map((item) => (
-              <div key={item.id} className="w-[180px] sm:w-[220px] rounded-2xl bg-card border p-3 shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md transition">
+              <div key={item.id} className="w-[140px] sm:w-[180px] rounded-2xl bg-card border p-3 shrink-0 flex flex-col justify-between shadow-sm hover:shadow-md transition">
                 <Link to="/product/$id" params={{ id: item.id }} className="block aspect-[4/5] rounded-xl overflow-hidden bg-muted relative mb-2">
                   <img src={item.image_url ?? ""} alt={item.name} className="size-full object-cover" />
                   {item.stock > 0 && (

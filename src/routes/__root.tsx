@@ -19,7 +19,7 @@ import { SocialProofPopup } from "@/components/SocialProofPopup";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useSiteSettings } from "@/lib/settings";
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import appCss from "../styles.css?url";
 
@@ -80,25 +80,58 @@ function NotFoundComponent() {
   );
 }
 
+/* [2] Silent auto-retry error component — no manual "حاول تاني" button */
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
   const router = useRouter();
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold">حصل خطأ غير متوقع</h1>
-        <p className="mt-2 text-sm text-muted-foreground">جرّب تحدّث الصفحة أو ارجع للرئيسية.</p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button onClick={() => { router.invalidate(); reset(); }}
-            className="rounded-md gradient-gold text-primary px-4 py-2 text-sm font-bold">حاول تاني</button>
-          <a href="/" className="rounded-md border px-4 py-2 text-sm">للرئيسية</a>
+  const retryCount = useRef(0);
+  const maxRetries = 3;
+
+  useEffect(() => {
+    console.error("[Hedma] Error caught:", error);
+
+    if (retryCount.current < maxRetries) {
+      retryCount.current += 1;
+      const timer = setTimeout(() => {
+        router.invalidate();
+        reset();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [error, reset, router]);
+
+  // While retrying silently, show a loading spinner
+  if (retryCount.current < maxRetries) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center bg-background px-4">
+        <div className="text-center space-y-4">
+          <div className="mx-auto size-10 border-4 border-[#D4A017] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground animate-pulse">جاري إعادة المحاولة...</p>
         </div>
+      </div>
+    );
+  }
+
+  // After max retries exhausted, show a simple message with a home link (no manual retry)
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center bg-background px-4">
+      <div className="max-w-sm text-center space-y-4">
+        <div className="mx-auto size-16 rounded-full bg-muted grid place-items-center">
+          <span className="text-2xl">⚠️</span>
+        </div>
+        <h2 className="text-lg font-bold">عذراً، حدثت مشكلة</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          لم نتمكن من تحميل الصفحة. يرجى التحقق من اتصالك بالإنترنت.
+        </p>
+        <a href="/" className="inline-flex items-center justify-center rounded-xl gradient-gold text-primary px-6 py-2.5 text-sm font-bold shadow-luxe">
+          العودة للرئيسية
+        </a>
       </div>
     </div>
   );
 }
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
+{
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -134,31 +167,33 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* [1] Fixed AuthGuard — no longer forces redirect for public pages; 
+   the auth route renders without chrome. All other pages get full layout. */
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuthCtx();
   const router = useRouter();
   const path = router.state.location.pathname;
   const isAuthRoute = path === "/auth";
 
+  // Public routes that don't need authentication
+  const publicRoutes = ["/", "/products", "/our-story", "/customers", "/try-on", "/wishlist"];
+  const isPublicRoute = publicRoutes.some(r => path === r || path.startsWith("/product/") || path.startsWith("/track/"));
+
   useEffect(() => {
     if (loading) return;
-    if (!session && !isAuthRoute) {
+    // Only redirect to auth for protected routes when not logged in
+    if (!session && !isAuthRoute && !isPublicRoute) {
       router.navigate({ to: "/auth", replace: true });
     }
-  }, [session, loading, isAuthRoute, router]);
+  }, [session, loading, isAuthRoute, isPublicRoute, router]);
 
   if (loading) {
     return (
       <div className="min-h-screen grid place-items-center bg-background">
-        <div className="text-sm font-bold text-gold-gradient animate-pulse">جاري التحميل...</div>
-      </div>
-    );
-  }
-
-  if (!session && !isAuthRoute) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-background">
-        <div className="text-sm font-bold text-muted-foreground animate-pulse">جاري تحويلك لتسجيل الدخول...</div>
+        <div className="text-center space-y-3">
+          <div className="mx-auto size-8 border-4 border-[#D4A017] border-t-transparent rounded-full animate-spin" />
+          <div className="text-sm font-bold text-gold-gradient animate-pulse">جاري التحميل...</div>
+        </div>
       </div>
     );
   }
