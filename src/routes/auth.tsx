@@ -21,6 +21,11 @@ function Auth() {
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotPhone, setForgotPhone] = useState("");
 
+  // OTP Verification Modal State
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [enteredOtp, setEnteredOtp] = useState("");
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault(); 
     
@@ -40,10 +45,9 @@ function Auth() {
     nav({ to: "/" });
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // [12] Input sanitization and validation
     const username = su.u.trim().replace(/\s+/g, ' ');
     const password = su.p.trim();
     const phone = su.phone.trim();
@@ -62,26 +66,87 @@ function Auth() {
       return toast.error("رقم التليفون مطلوب ولا يمكن أن يكون فارغاً");
     }
     
+    // Simulate sending OTP code
+    const randomOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    setGeneratedOtp(randomOtp);
+    setShowOtpModal(true);
+    toast.info("📱 تم إرسال كود التحقق التجريبي!", {
+      description: `كود التحقق الخاص بك هو: ${randomOtp}`,
+      duration: 8000
+    });
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (enteredOtp.trim() !== generatedOtp) {
+      return toast.error("كود التحقق غير صحيح، برجاء المحاولة مرة أخرى");
+    }
+
+    const username = su.u.trim().replace(/\s+/g, ' ');
+    const password = su.p.trim();
+    const phone = su.phone.trim();
+    const fullName = su.full_name.trim().replace(/\s+/g, ' ');
+
     setLoading(true);
     const { error } = await signUp(username, password, phone, fullName);
     setLoading(false);
-    if (error) return toast.error("ما قدرناش ننشئ الحساب", { description: error });
-    toast.success("تم إنشاء الحساب! 🎉");
+    
+    if (error) {
+      return toast.error("ما قدرناش ننشئ الحساب", { description: error });
+    }
+
+    // Submit registration notification for admin
+    await supabase.from("notifications").insert({
+      title: "عضو جديد انضم للموقع 🎉",
+      content: `قام المستخدم ${fullName} (@${username}) بإنشاء حساب جديد بنجاح.`,
+      type: "user",
+      read: false
+    });
+
+    toast.success("تم إنشاء الحساب بنجاح! 🎉");
+    setShowOtpModal(false);
+    setEnteredOtp("");
     nav({ to: "/" });
   };
 
-  const handleForgotPasswordSubmit = (e: React.FormEvent) => {
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedPhone = forgotPhone.trim();
     if (!trimmedPhone) {
       return toast.error("برجاء إدخال رقم الهاتف أولاً");
     }
-    const textMsg = `نسيت بيانات الدخول. رقم هاتفي: ${trimmedPhone}`;
-    const waUrl = `https://wa.me/201061308449?text=${encodeURIComponent(textMsg)}`;
+    
+    setLoading(true);
+    // 1. Save recovery request to database
+    const { error } = await supabase.from("password_recovery_requests").insert({
+      username: trimmedPhone,
+      phone: trimmedPhone,
+      status: "pending"
+    });
+    
+    if (error) {
+      setLoading(false);
+      return toast.error("حدث خطأ أثناء تقديم الطلب: " + error.message);
+    }
+
+    // 2. Insert In-App Notification for Admin
+    await supabase.from("notifications").insert({
+      title: "طلب استعادة كلمة مرور جديد 🔐",
+      content: `المستخدم صاحب الرقم/اليوزر (${trimmedPhone}) يطلب استعادة كلمة المرور الخاص به.`,
+      type: "recovery",
+      read: false
+    });
+
+    setLoading(false);
+    toast.success("تم تقديم طلبك للإدارة بنجاح وجاري مراجعته ✅");
+
+    // Open WhatsApp as secondary support action
+    const textMsg = `نسيت بيانات الدخول الخاصة بي. رقم هاتفي: ${trimmedPhone}`;
+    const waUrl = `https://wa.me/201229344711?text=${encodeURIComponent(textMsg)}`;
     window.open(waUrl, "_blank");
+
     setShowForgotModal(false);
     setForgotPhone("");
-    toast.success("تم فتح واتساب للتواصل مع الدعم الفني استعادة كلمة المرور");
   };
 
   return (
@@ -150,6 +215,43 @@ function Auth() {
         </Tabs>
       </div>
 
+      {/* OTP Verification Modal */}
+      {showOtpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-300">
+          <div className="bg-card w-full max-w-sm rounded-3xl p-6 shadow-luxe border border-gold-gradient/10 relative">
+            <button 
+              onClick={() => { setShowOtpModal(false); setEnteredOtp(""); }} 
+              className="absolute top-4 left-4 text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-5" />
+            </button>
+            <h3 className="font-bold text-lg mb-4 text-gold-gradient">
+              رمز التحقق OTP 📱
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">أدخل كود التحقق المكون من 4 أرقام المرسل إلى هاتفك لإتمام التسجيل.</p>
+            
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <div>
+                <Label>كود التحقق</Label>
+                <Input 
+                  value={enteredOtp} 
+                  onChange={e => setEnteredOtp(e.target.value)} 
+                  placeholder="xxxx" 
+                  dir="ltr"
+                  maxLength={4}
+                  className="text-center text-xl font-bold tracking-widest rounded-xl border-gold-gradient/20" 
+                  required
+                />
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full gradient-gold text-primary rounded-xl font-bold shadow-luxe">
+                {loading ? "جاري التحقق..." : "تأكيد الكود وإتمام التسجيل"}
+              </Button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Forgot Password Modal */}
       {showForgotModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-300">
@@ -163,23 +265,22 @@ function Auth() {
             <h3 className="font-bold text-lg mb-4 text-gold-gradient flex items-center gap-2">
               استعادة كلمة المرور
             </h3>
-            <p className="text-xs text-muted-foreground mb-4">أدخل رقم الهاتف المسجل لتتمكن من إرسال طلب استعادة الحساب للدعم الفني مباشرة عبر واتساب.</p>
+            <p className="text-xs text-muted-foreground mb-4">أدخل رقم الهاتف المسجل أو اسم المستخدم لتقديم طلب استعادة الحساب للدعم الفني.</p>
             
             <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
               <div>
-                <Label>رقم الهاتف</Label>
+                <Label>رقم الهاتف أو اسم المستخدم</Label>
                 <Input 
                   value={forgotPhone} 
                   onChange={e => setForgotPhone(e.target.value)} 
-                  placeholder="01xxxxxxxxx" 
-                  dir="ltr"
-                  className="text-left rounded-xl border-gold-gradient/20" 
+                  placeholder="أدخل رقمك أو اسم المستخدم" 
+                  className="rounded-xl border-gold-gradient/20" 
                   required
                 />
               </div>
 
-              <Button type="submit" className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm">
-                <MessageCircle className="size-4" /> تواصل معنا على واتساب 💬
+              <Button type="submit" disabled={loading} className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm">
+                <MessageCircle className="size-4" /> تقديم الطلب وتواصل واتساب 💬
               </Button>
             </form>
           </div>

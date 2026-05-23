@@ -23,6 +23,7 @@ import { ActivityTab } from "@/components/admin/ActivityTab";
 import { VendorInsightsTab } from "@/components/admin/VendorInsightsTab";
 import { ProductControlTab } from "@/components/admin/ProductControlTab";
 import { InventoryReportsTab } from "@/components/admin/InventoryReportsTab";
+import { PasswordRecoveryTab } from "@/components/admin/PasswordRecoveryTab";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
 
@@ -79,6 +80,7 @@ function AdminPanel() {
               {activeTab === "orders" && "الطلبيات"}
               {activeTab === "merchants" && "المحلات والتجار"}
               {activeTab === "users" && "المستخدمين والصلاحيات"}
+              {activeTab === "recovery" && "استعادة الحسابات"}
               {activeTab === "customers" && "قاعدة العملاء"}
               {activeTab === "inventory" && "الجرد والتقارير"}
               {activeTab === "vendor-insights" && "تحليل أداء التجار"}
@@ -113,7 +115,7 @@ function AdminPanel() {
 
           {activeTab === "products" && (
             <div className="space-y-6 animate-in fade-in duration-500">
-               <ProductsTable products={products ?? []} />
+               <ProductsTab products={products ?? []} />
             </div>
           )}
 
@@ -126,6 +128,12 @@ function AdminPanel() {
           {activeTab === "inventory" && (
              <div className="space-y-6 animate-in fade-in duration-500">
                <InventoryReportsTab />
+             </div>
+          )}
+
+          {activeTab === "recovery" && (
+             <div className="space-y-6 animate-in fade-in duration-500">
+               <PasswordRecoveryTab />
              </div>
           )}
 

@@ -1,9 +1,11 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { Logo } from "./Logo";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { Button } from "./ui/button";
-import { ShoppingBag, User, LayoutDashboard, LogOut, Sparkles, Store, Truck, Package, Settings, Moon, Sun } from "lucide-react";
+import { NotificationBell } from "./NotificationBell";
+import { ShoppingBag, Heart, User, LayoutDashboard, LogOut, Sparkles, Store, Truck, Package, Settings, Moon, Sun } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "./ui/dropdown-menu";
 import { useTheme } from "./ThemeProvider";
 
@@ -12,6 +14,25 @@ export function Header() {
   const { count } = useCart();
   const nav = useNavigate();
   const { theme, setTheme } = useTheme();
+  const [wishlistCount, setWishlistCount] = useState(0);
+
+  useEffect(() => {
+    const updateCount = () => {
+      try {
+        const list = JSON.parse(localStorage.getItem("hedma-wishlist") || "[]");
+        setWishlistCount(list.length);
+      } catch {
+        setWishlistCount(0);
+      }
+    };
+    updateCount();
+    window.addEventListener("wishlist-change", updateCount);
+    window.addEventListener("storage", updateCount);
+    return () => {
+      window.removeEventListener("wishlist-change", updateCount);
+      window.removeEventListener("storage", updateCount);
+    };
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-xl">
@@ -29,6 +50,13 @@ export function Header() {
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Toggle theme">
             {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
+          </Button>
+          {isAdmin && <NotificationBell />}
+          <Button variant="ghost" size="icon" onClick={() => nav({ to: "/wishlist" })} aria-label="المفضلة" className="relative">
+            <Heart className="size-5" />
+            {wishlistCount > 0 && (
+              <span className="absolute -top-1 -left-1 grid place-items-center min-w-5 h-5 px-1 rounded-full text-[11px] font-bold bg-red-500 text-white">{wishlistCount}</span>
+            )}
           </Button>
           <Button variant="ghost" size="icon" onClick={() => nav({ to: "/cart" })} aria-label="السلة" className="relative">
             <ShoppingBag className="size-5" />

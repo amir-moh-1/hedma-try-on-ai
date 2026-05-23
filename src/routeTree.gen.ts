@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as VendorRouteImport } from './routes/vendor'
 import { Route as TryOnRouteImport } from './routes/try-on'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -24,6 +25,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TrackIdRouteImport } from './routes/track.$id'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 
+const WishlistRoute = WishlistRouteImport.update({
+  id: '/wishlist',
+  path: '/wishlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendorRoute = VendorRouteImport.update({
   id: '/vendor',
   path: '/vendor',
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/try-on': typeof TryOnRoute
   '/vendor': typeof VendorRoute
+  '/wishlist': typeof WishlistRoute
   '/product/$id': typeof ProductIdRoute
   '/track/$id': typeof TrackIdRoute
 }
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/try-on': typeof TryOnRoute
   '/vendor': typeof VendorRoute
+  '/wishlist': typeof WishlistRoute
   '/product/$id': typeof ProductIdRoute
   '/track/$id': typeof TrackIdRoute
 }
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/try-on': typeof TryOnRoute
   '/vendor': typeof VendorRoute
+  '/wishlist': typeof WishlistRoute
   '/product/$id': typeof ProductIdRoute
   '/track/$id': typeof TrackIdRoute
 }
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/try-on'
     | '/vendor'
+    | '/wishlist'
     | '/product/$id'
     | '/track/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/try-on'
     | '/vendor'
+    | '/wishlist'
     | '/product/$id'
     | '/track/$id'
   id:
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/try-on'
     | '/vendor'
+    | '/wishlist'
     | '/product/$id'
     | '/track/$id'
   fileRoutesById: FileRoutesById
@@ -208,12 +220,20 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   TryOnRoute: typeof TryOnRoute
   VendorRoute: typeof VendorRoute
+  WishlistRoute: typeof WishlistRoute
   ProductIdRoute: typeof ProductIdRoute
   TrackIdRoute: typeof TrackIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wishlist': {
+      id: '/wishlist'
+      path: '/wishlist'
+      fullPath: '/wishlist'
+      preLoaderRoute: typeof WishlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendor': {
       id: '/vendor'
       path: '/vendor'
@@ -328,6 +348,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   TryOnRoute: TryOnRoute,
   VendorRoute: VendorRoute,
+  WishlistRoute: WishlistRoute,
   ProductIdRoute: ProductIdRoute,
   TrackIdRoute: TrackIdRoute,
 }

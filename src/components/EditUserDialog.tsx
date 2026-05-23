@@ -22,6 +22,7 @@ export function EditUserDialog({ user, onClose }: { user: any, onClose: () => vo
     username: user.username || "",
     phone: user.phone || "",
     full_name: user.full_name || "",
+    password: "",
   });
   const [selectedRoles, setSelectedRoles] = useState<string[]>(user.roles || []);
 
@@ -36,17 +37,37 @@ export function EditUserDialog({ user, onClose }: { user: any, onClose: () => vo
     
     setLoading(true);
     
-    // 1. Update Profile Information
-    const { error: profileError } = await supabase.from("profiles").update({
-      username: form.username.trim(),
-      phone: form.phone.trim() || null,
-      full_name: form.full_name.trim() || null,
-    }).eq("id", user.id);
+    // 1. Update Profile & Auth Information via RPC
+    const encodeUsername = (input: string) => {
+      if (input.includes("@")) return input;
+      const trimmed = input.trim();
+      const isNonAscii = /[^\x00-\x7F]/.test(trimmed);
+      if (isNonAscii) {
+        const hex = Array.from(trimmed)
+          .map(char => char.charCodeAt(0).toString(16).padStart(4, '0'))
+          .join('');
+        return `u_hex_${hex}`;
+      }
+      return trimmed;
+    };
 
-    if (profileError) {
+    const email = form.username.includes("@")
+      ? form.username
+      : `${encodeUsername(form.username).toLowerCase()}@hedma.local`;
+
+    const { data: rpcSuccess, error: rpcError } = await supabase.rpc("admin_update_user", {
+      target_user_id: user.id,
+      new_username: form.username.trim(),
+      new_email: email,
+      new_password: form.password.trim() || null,
+      new_phone: form.phone.trim() || null,
+      new_full_name: form.full_name.trim() || null
+    });
+
+    if (rpcError) {
       setLoading(false);
-      if (profileError.code === "23505") return toast.error("اليوزر نيم مستخدم من قبل");
-      return toast.error("خطأ في حفظ الملف الشخصي: " + profileError.message);
+      if (rpcError.message.includes("23505") || rpcError.code === "23505") return toast.error("اليوزر نيم مستخدم من قبل");
+      return toast.error("خطأ في حفظ الملف الشخصي: " + rpcError.message);
     }
 
     // 2. Update Roles (Sync with user_roles table)
@@ -93,6 +114,10 @@ export function EditUserDialog({ user, onClose }: { user: any, onClose: () => vo
           <div>
             <Label className="font-bold">رقم الموبايل</Label>
             <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} dir="ltr" className="text-left rounded-xl border-gold-gradient/20" />
+          </div>
+          <div>
+            <Label className="font-bold">كلمة المرور الجديدة (اختياري)</Label>
+            <Input type="password" placeholder="اتركها فارغة لعدم التغيير" value={form.password} onChange={e => setForm({...form, password: e.target.value})} dir="ltr" className="text-left rounded-xl border-gold-gradient/20" />
           </div>
 
           <div>

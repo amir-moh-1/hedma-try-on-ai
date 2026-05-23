@@ -24,8 +24,24 @@ type AuthCtx = {
 const Ctx = createContext<AuthCtx | null>(null);
 
 const USERNAME_DOMAIN = "hedma.local";
-const toEmail = (input: string) =>
-  input.includes("@") ? input.toLowerCase() : `${input.toLowerCase()}@${USERNAME_DOMAIN}`;
+
+const encodeUsername = (input: string) => {
+  if (input.includes("@")) return input;
+  const trimmed = input.trim();
+  const isNonAscii = /[^\x00-\x7F]/.test(trimmed);
+  if (isNonAscii) {
+    const hex = Array.from(trimmed)
+      .map(char => char.charCodeAt(0).toString(16).padStart(4, '0'))
+      .join('');
+    return `u_hex_${hex}`;
+  }
+  return trimmed;
+};
+
+const toEmail = (input: string) => {
+  const encoded = encodeUsername(input);
+  return encoded.includes("@") ? encoded.toLowerCase() : `${encoded.toLowerCase()}@${USERNAME_DOMAIN}`;
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

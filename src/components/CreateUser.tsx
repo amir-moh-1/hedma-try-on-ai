@@ -10,7 +10,13 @@ import { useQueryClient } from "@tanstack/react-query";
 // Create a secondary client so it doesn't affect the admin's session
 const supabaseSecondary = createClient(
   import.meta.env.VITE_SUPABASE_URL || "",
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || ""
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    }
+  }
 );
 
 export function CreateUser() {
@@ -29,7 +35,21 @@ export function CreateUser() {
     }
     
     setLoading(true);
-    const email = form.username.includes("@") ? form.username : `${form.username}@hedma.local`;
+    const encodeUsername = (input: string) => {
+      if (input.includes("@")) return input;
+      const trimmed = input.trim();
+      const isNonAscii = /[^\x00-\x7F]/.test(trimmed);
+      if (isNonAscii) {
+        const hex = Array.from(trimmed)
+          .map(char => char.charCodeAt(0).toString(16).padStart(4, '0'))
+          .join('');
+        return `u_hex_${hex}`;
+      }
+      return trimmed;
+    };
+    const email = form.username.includes("@") 
+      ? form.username 
+      : `${encodeUsername(form.username).toLowerCase()}@hedma.local`;
     
     const { data, error } = await supabaseSecondary.auth.signUp({
       email,

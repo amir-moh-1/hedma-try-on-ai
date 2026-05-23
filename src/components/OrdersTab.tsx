@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { formatEGP } from "@/lib/format";
@@ -13,6 +15,8 @@ import { useSiteSettings } from "@/lib/settings";
 export function OrdersTab({ profiles }: { profiles: { id: string; username: string; roles: string[] }[] }) {
   const qc = useQueryClient();
   const { logo_url, slogan } = useSiteSettings();
+  const [searchQuery, setSearchQuery] = useState("");
+
   const { data: orders } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
@@ -20,6 +24,22 @@ export function OrdersTab({ profiles }: { profiles: { id: string; username: stri
       return data ?? [];
     },
     refetchInterval: 15_000,
+  });
+
+  const filteredOrders = (orders ?? []).filter((o: any) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    
+    const idMatch = o.id.toLowerCase().includes(q) || `#${o.id.slice(0, 8)}`.toLowerCase().includes(q);
+    const nameMatch = (o.customer_name ?? "").toLowerCase().includes(q);
+    const phoneMatch = (o.customer_phone ?? "").toLowerCase().includes(q);
+    const addressMatch = (o.customer_address ?? "").toLowerCase().includes(q);
+    const couponMatch = (o.coupon_code ?? "").toLowerCase().includes(q);
+    const itemsMatch = ((o.items as any[]) ?? []).some((item: any) => 
+      item.name.toLowerCase().includes(q)
+    );
+    
+    return idMatch || nameMatch || phoneMatch || addressMatch || couponMatch || itemsMatch;
   });
   
   const agents = profiles.filter((p) => p.roles.includes("delivery") || p.roles.includes("admin"));
@@ -138,7 +158,23 @@ export function OrdersTab({ profiles }: { profiles: { id: string; username: stri
 
   return (
     <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-      {(orders ?? []).map((o: any) => {
+      {/* Smart Search Bar */}
+      <div className="rounded-2xl border bg-card p-4 shadow-sm border-gold-gradient/10">
+        <label className="text-xs font-bold text-muted-foreground mb-1.5 block">البحث الذكي في الطلبات والفواتير:</label>
+        <Input
+          placeholder="ابحث برقم الطلب، اسم العميل، رقم الهاتف، العنوان، أو اسم المنتج..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="rounded-xl border-gold-gradient/20 focus:ring-gold-gradient/30 w-full"
+        />
+        {searchQuery && (
+          <div className="text-[10px] text-muted-foreground mt-1.5 font-bold">
+            تم العثور على {filteredOrders.length} طلب مطابق لبحثك.
+          </div>
+        )}
+      </div>
+
+      {filteredOrders.map((o: any) => {
         const items = (o.items as any[]) ?? [];
         return (
           <div key={o.id} className="rounded-2xl border bg-card p-5 shadow-sm hover:shadow-md transition-shadow">
@@ -194,7 +230,11 @@ export function OrdersTab({ profiles }: { profiles: { id: string; username: stri
           </div>
         );
       })}
-      {(orders ?? []).length === 0 && <div className="p-20 text-center text-muted-foreground border-2 border-dashed rounded-3xl">لا توجد طلبيات حالياً</div>}
+      {filteredOrders.length === 0 && (
+        <div className="p-20 text-center text-muted-foreground border-2 border-dashed rounded-3xl">
+          {searchQuery ? "لا توجد طلبيات تطابق بحثك 🔍" : "لا توجد طلبيات حالياً"}
+        </div>
+      )}
     </div>
   );
 }

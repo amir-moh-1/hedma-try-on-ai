@@ -46,3 +46,113 @@ ON CONFLICT (id) DO NOTHING;
 UPDATE site_settings SET marquee_visible = TRUE WHERE marquee_visible IS NULL;
 UPDATE site_settings SET social_proof_enabled = TRUE WHERE social_proof_enabled IS NULL;
 UPDATE profiles SET is_banned = FALSE WHERE is_banned IS NULL;
+
+
+-- 5. Password Recovery Requests Table
+CREATE TABLE IF NOT EXISTS public.password_recovery_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT NOT NULL,
+    phone TEXT,
+    status TEXT DEFAULT 'pending', -- pending, resolved, rejected
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS on Recovery Table
+ALTER TABLE public.password_recovery_requests ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist to avoid conflict
+DROP POLICY IF EXISTS "Allow public inserts" ON public.password_recovery_requests;
+DROP POLICY IF EXISTS "Allow admin read/write" ON public.password_recovery_requests;
+
+-- Create Policies
+CREATE POLICY "Allow public inserts" ON public.password_recovery_requests
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow admin read/write" ON public.password_recovery_requests
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM public.user_roles 
+            WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'
+        )
+    );
+
+
+-- 6. Notifications Table
+CREATE TABLE IF NOT EXISTS public.notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    content TEXT,
+    type TEXT DEFAULT 'info', -- info, order, user, recovery
+    read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS on Notifications
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow authenticated read" ON public.notifications;
+DROP POLICY IF EXISTS "Allow public insert" ON public.notifications;
+DROP POLICY IF EXISTS "Allow admin all" ON public.notifications;
+
+CREATE POLICY "Allow authenticated read" ON public.notifications
+    FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Allow public insert" ON public.notifications
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow admin all" ON public.notifications
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM public.user_roles 
+            WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'
+        )
+    );
+
+
+-- 7. Admin Update User Function (SECURITY DEFINER)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE OR REPLACE FUNCTION admin_update_user(
+  target_user_id UUID,
+  new_username TEXT,
+  new_email TEXT,
+  new_password TEXT DEFAULT NULL,
+  new_phone TEXT DEFAULT NULL,
+  new_full_name TEXT DEFAULT NULL
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+  caller_role TEXT;
+BEGIN
+  -- Check if the caller is an admin
+  SELECT role INTO caller_role FROM public.user_roles WHERE user_id = auth.uid() LIMIT 1;
+  
+  IF caller_role = 'admin' THEN
+    -- Update auth.users email and password (if provided)
+    IF new_password IS NOT NULL AND new_password <> '' THEN
+      UPDATE auth.users
+      SET email = LOWER(new_email),
+          encrypted_password = crypt(new_password, gen_salt('bf')),
+          email_confirmed_at = NOW()
+      WHERE id = target_user_id;
+    ELSE
+      UPDATE auth.users
+      SET email = LOWER(new_email)
+      WHERE id = target_user_id;
+    END IF;
+
+    -- Update public.profiles table
+    UPDATE public.profiles
+    SET username = new_username,
+        phone = new_phone,
+        full_name = new_full_name,
+        plain_password = COALESCE(NULLIF(new_password, ''), plain_password)
+    WHERE id = target_user_id;
+
+    RETURN TRUE;
+  ELSE
+    RAISE EXCEPTION 'غير مصرح لك بتعديل بيانات هذا المستخدم';
+    RETURN FALSE;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

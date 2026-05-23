@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useCart } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Sparkles, Upload, Loader2, MessageCircle, Check, X } from "lucide-react";
@@ -24,6 +25,7 @@ const fileToDataUrl = (f: File) => new Promise<string>((res, rej) => {
 function TryOn() {
   const { product: presetProduct } = Route.useSearch();
   const { session } = useAuth();
+  const { items: cartItems } = useCart();
   const [personUrl, setPersonUrl] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>(presetProduct ? [presetProduct] : []);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -202,6 +204,36 @@ function TryOn() {
                 <button onClick={() => setSelected([])} className="text-xs text-muted-foreground hover:text-destructive">إفراغ الاختيار</button>
               )}
             </div>
+            
+            {cartItems && cartItems.length > 0 && (
+              <div className="mb-4 p-3 rounded-2xl bg-[#D4A017]/5 border border-[#D4A017]/20">
+                <div className="text-xs font-bold text-gold mb-2">🛒 منتجات في سلتك (تحديد سريع):</div>
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                  {cartItems.map((item) => {
+                    const isSel = selected.includes(item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => toggle(item.id)}
+                        className={`relative size-14 rounded-xl overflow-hidden border-2 shrink-0 transition ${
+                          isSel ? "border-[#D4A017] scale-105 shadow-md" : "border-transparent opacity-80 hover:opacity-100"
+                        }`}
+                        title={item.name}
+                      >
+                        {item.image && <img src={item.image} className="size-full object-cover" alt={item.name} />}
+                        {isSel && (
+                          <span className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <Check className="size-5 text-[#D4A017] font-bold" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-1.5 mb-2">
               {cats.map((c) => (
                 <button key={c} onClick={() => setCatFilter(c)}

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatEGP } from "@/lib/format";
 import { toast } from "sonner";
 import { ShoppingBag, Sparkles, MapPin, Package, AlertTriangle, Plus, X } from "lucide-react";
-import { catAr } from "@/lib/categories";
+import { catAr, getCategoryBadge } from "@/lib/categories";
 import { ProductReviews } from "@/components/ProductReviews";
 import { Countdown } from "@/components/Countdown";
 import { RelatedProducts } from "@/components/RelatedProducts";
@@ -68,7 +68,7 @@ function ProductDetail() {
     },
   });
 
-  // Complete the Look recommendation algorithm
+  // Complete the Look recommendation algorithm (3-4 items)
   const { data: completeTheLook } = useQuery({
     queryKey: ["complete-look", p?.category, p?.id],
     enabled: !!p,
@@ -85,34 +85,31 @@ function ProductDetail() {
       const cat = p.category?.toLowerCase();
 
       if (cat === "tshirts" || cat === "t-shirts") {
-        const pants = prods.find((x) => x.category?.toLowerCase() === "pants");
-        const shoes = prods.find((x) => x.category?.toLowerCase() === "shoes" || x.category?.toLowerCase() === "sneakers");
-        if (pants) recs.push(pants);
-        if (shoes) recs.push(shoes);
+        const pants = prods.filter((x) => x.category?.toLowerCase() === "pants" || x.category?.toLowerCase() === "jeans");
+        const shoes = prods.filter((x) => x.category?.toLowerCase() === "shoes" || x.category?.toLowerCase() === "sneakers");
+        recs = [...pants.slice(0, 2), ...shoes.slice(0, 2)];
       } else if (cat === "pants" || cat === "jeans") {
-        const tshirts = prods.find((x) => x.category?.toLowerCase() === "tshirts" || x.category?.toLowerCase() === "t-shirts");
-        const acc = prods.find((x) => x.category?.toLowerCase() === "accessories");
-        if (tshirts) recs.push(tshirts);
-        if (acc) recs.push(acc);
+        const tshirts = prods.filter((x) => x.category?.toLowerCase() === "tshirts" || x.category?.toLowerCase() === "t-shirts" || x.category?.toLowerCase() === "shirts");
+        const acc = prods.filter((x) => x.category?.toLowerCase() === "accessories");
+        recs = [...tshirts.slice(0, 2), ...acc.slice(0, 2)];
       } else if (cat === "shoes" || cat === "sneakers") {
-        const tshirts = prods.find((x) => x.category?.toLowerCase() === "tshirts" || x.category?.toLowerCase() === "t-shirts");
-        const pants = prods.find((x) => x.category?.toLowerCase() === "pants");
-        if (tshirts) recs.push(tshirts);
-        if (pants) recs.push(pants);
+        const tshirts = prods.filter((x) => x.category?.toLowerCase() === "tshirts" || x.category?.toLowerCase() === "t-shirts");
+        const pants = prods.filter((x) => x.category?.toLowerCase() === "pants" || x.category?.toLowerCase() === "jeans");
+        recs = [...tshirts.slice(0, 2), ...pants.slice(0, 2)];
       } else {
         const distinctCats = Array.from(new Set(prods.map((x) => x.category))).filter((c) => c !== p.category);
-        distinctCats.slice(0, 2).forEach((c) => {
-          const matched = prods.find((x) => x.category === c);
-          if (matched) recs.push(matched);
+        distinctCats.forEach((c) => {
+          const matched = prods.filter((x) => x.category === c);
+          recs = [...recs, ...matched.slice(0, 1)];
         });
       }
 
-      if (recs.length < 2) {
-        const fill = prods.filter((x) => !recs.map((r) => r.id).includes(x.id)).slice(0, 2 - recs.length);
+      if (recs.length < 4) {
+        const fill = prods.filter((x) => !recs.map((r) => r.id).includes(x.id)).slice(0, 4 - recs.length);
         recs = [...recs, ...fill];
       }
 
-      return recs;
+      return recs.slice(0, 4);
     },
   });
 
@@ -343,7 +340,11 @@ function ProductDetail() {
                   )}
                 </Link>
                 <div>
-                  <div className="text-[10px] text-muted-foreground mb-0.5">{catAr(item.category)}</div>
+                  <div className="mb-1 flex">
+                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-black border ${getCategoryBadge(item.category).bg} ${getCategoryBadge(item.category).text} ${getCategoryBadge(item.category).border}`}>
+                      {catAr(item.category)}
+                    </span>
+                  </div>
                   <div className="font-bold text-xs line-clamp-1 mb-1">{item.name}</div>
                   <div className="font-display text-sm font-black text-gold">{formatEGP(item.price)}</div>
                 </div>

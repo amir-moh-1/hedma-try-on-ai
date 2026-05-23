@@ -19,7 +19,7 @@ export const Route = createFileRoute("/cart")({ component: Cart });
 type Coupon = { percent: number; code: string; message: string | null };
 
 function Cart() {
-  const { items, remove, setQty, total, clear } = useCart();
+  const { items, add, remove, setQty, total, clear } = useCart();
   const { user, profile } = useAuth();
   const { whatsapp, slogan, logo_url } = useSiteSettings();
   const nav = useNavigate();
@@ -361,16 +361,37 @@ function Cart() {
                 <div className="text-xs text-muted-foreground mb-3 font-semibold">تاريخ الطلب: {new Date(order.created_at).toLocaleDateString("ar-EG")}</div>
                 <div className="space-y-3">
                   {(order.items as any[]).map((i: any, idx: number) => (
-                    <div key={idx} className="flex gap-3 items-center">
-                      <div className="size-16 rounded-lg overflow-hidden bg-muted shrink-0">
-                        {i.image && <img src={i.image} className="size-full object-cover" alt={i.name} loading="lazy" />}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-sm">{i.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {i.qty} × {formatEGP(i.price)} {i.size && `• مقاس ${i.size}`} {i.color && `• لون ${i.color}`}
+                    <div key={idx} className="flex gap-3 items-center justify-between w-full border-b border-border/40 pb-2 last:border-0 last:pb-0">
+                      <div className="flex gap-3 items-center">
+                        <div className="size-16 rounded-lg overflow-hidden bg-muted shrink-0">
+                          {i.image && <img src={i.image} className="size-full object-cover" alt={i.name} loading="lazy" />}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm">{i.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatEGP(i.price)} {i.size && `• مقاس ${i.size}`} {i.color && `• لون ${i.color}`}
+                          </div>
                         </div>
                       </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        type="button"
+                        className="h-8 px-3 text-xs border-[#D4A017] text-[#D4A017] hover:bg-[#D4A017]/10 shrink-0 font-bold"
+                        onClick={() => {
+                          add({
+                            id: i.id,
+                            name: i.name,
+                            price: i.price,
+                            image: i.image ?? undefined,
+                            size: i.size ?? undefined,
+                            color: i.color ?? undefined
+                          }, 1);
+                          toast.success(`تمت إعادة إضافة ${i.name} للسلة 🛒`);
+                        }}
+                      >
+                        شراء مجدداً 🔁
+                      </Button>
                     </div>
                   ))}
                 </div>

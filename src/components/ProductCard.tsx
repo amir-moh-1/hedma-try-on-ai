@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { formatEGP } from "@/lib/format";
-import { catAr } from "@/lib/categories";
+import { catAr, getCategoryBadge } from "@/lib/categories";
 import { useCart } from "@/lib/cart";
 import { Plus, Heart } from "lucide-react";
 import { toast } from "sonner";
@@ -49,6 +49,7 @@ export function ProductCard({ p }: { p: ProductCardData }) {
         toast.success("تم الإضافة للمفضلة ❤️");
       }
       localStorage.setItem("hedma-wishlist", JSON.stringify(newList));
+      window.dispatchEvent(new Event("wishlist-change"));
     } catch (err) {
       console.error(err);
     }
@@ -165,7 +166,11 @@ export function ProductCard({ p }: { p: ProductCardData }) {
       </div>
 
       <div className="p-3">
-        <div className="text-[10px] text-muted-foreground mb-0.5">{catAr(p.category)}</div>
+        <div className="mb-1 flex">
+          <span className={`text-[9px] px-2 py-0.5 rounded-full font-black border ${getCategoryBadge(p.category).bg} ${getCategoryBadge(p.category).text} ${getCategoryBadge(p.category).border}`}>
+            {catAr(p.category)}
+          </span>
+        </div>
         <div className="font-bold text-sm line-clamp-1 text-foreground">{p.name}</div>
         {p.stock === 0 && (
           <div className="text-[10px] font-semibold text-red-500 mt-0.5">هيتوفر قريباً</div>

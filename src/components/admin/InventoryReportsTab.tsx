@@ -12,7 +12,7 @@ import { useSiteSettings } from "@/lib/settings";
 
 export function InventoryReportsTab() {
   const { logo_url, slogan } = useSiteSettings();
-  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+  const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([]);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -29,14 +29,14 @@ export function InventoryReportsTab() {
     }
   });
 
-  const selectedVendor = vendors?.find(v => v.id === selectedVendorId);
+  const selectedVendors = vendors?.filter(v => selectedVendorIds.includes(v.id)) ?? [];
 
   // Fetch products with optional date filter
   const { data: products } = useQuery({
-    queryKey: ["admin-vendor-inventory", selectedVendorId, fromDate, toDate],
-    enabled: !!selectedVendorId,
+    queryKey: ["admin-vendor-inventory", selectedVendorIds, fromDate, toDate],
+    enabled: selectedVendorIds.length > 0,
     queryFn: async () => {
-      let query = supabase.from("products").select("*").eq("vendor_id", selectedVendorId);
+      let query = supabase.from("products").select("*").in("vendor_id", selectedVendorIds);
       
       if (fromDate) {
         query = query.gte("created_at", new Date(fromDate).toISOString());
@@ -54,14 +54,14 @@ export function InventoryReportsTab() {
   });
 
   const handleExportPDF = async () => {
-    if (!selectedVendorId || !selectedVendor) {
-      return toast.error("برجاء اختيار التاجر أولاً");
+    if (selectedVendorIds.length === 0) {
+      return toast.error("برجاء اختيار تاجر واحد على الأقل");
     }
 
     setExporting(true);
     toast.info("جاري إعداد تقرير الجرد... ⏳");
 
-    const vendorName = selectedVendor.full_name || selectedVendor.username;
+    const vendorName = selectedVendors.map(v => v.full_name || v.username).join("، ");
     const exportDateStr = new Date().toLocaleDateString("ar-EG");
     const totalInventoryValue = (products ?? []).reduce((acc, p) => acc + (p.price * (p.stock || 0)), 0);
 
@@ -167,7 +167,8 @@ export function InventoryReportsTab() {
       pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
       
       const fileDate = new Date().toISOString().split('T')[0];
-      pdf.save(`hedma-inventory-${selectedVendor.username}-${fileDate}.pdf`);
+      const nameKey = selectedVendors.length === 1 ? selectedVendors[0].username : "multiple";
+      pdf.save(`hedma-inventory-${nameKey}-${fileDate}.pdf`);
       toast.success("تم تصدير تقرير المخزون كـ PDF بنجاح! 📄🎉");
     } catch (err) {
       console.error(err);
@@ -186,49 +187,76 @@ export function InventoryReportsTab() {
         </h3>
         <p className="text-xs text-muted-foreground mb-6">احصل على كشوف جرد كاملة ومفصلة وقيمة المخزون الإجمالية لكل تاجر في صيغة PDF احترافية.</p>
 
-        <div className="grid sm:grid-cols-3 gap-4 items-end">
+        <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-xs font-bold text-muted-foreground block">التاجر المستهدف</label>
-            <Select onValueChange={(v) => setSelectedVendorId(v)}>
-              <SelectTrigger className="rounded-xl border-gold-gradient/20">
-                <SelectValue placeholder="اختر التاجر" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                {(vendors ?? []).map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.full_name || v.username} ({v.username})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <label className="text-xs font-bold text-muted-foreground block">التجار المستهدفين (اختر تاجر أو أكثر):</label>
+            <div className="flex flex-wrap gap-2 p-3 rounded-xl border border-gold-gradient/20 bg-muted/5 max-h-36 overflow-y-auto">
+              <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-card hover:bg-muted/30 cursor-pointer text-xs select-none">
+                <input
+                  type="checkbox"
+                  checked={selectedVendorIds.length === (vendors ?? []).length && (vendors ?? []).length > 0}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedVendorIds((vendors ?? []).map(v => v.id));
+                    } else {
+                      setSelectedVendorIds([]);
+                    }
+                  }}
+                  className="accent-[#D4A017] rounded size-4"
+                />
+                <span className="font-bold">تحديد الكل</span>
+              </label>
+              {(vendors ?? []).map((v) => {
+                const isChecked = selectedVendorIds.includes(v.id);
+                return (
+                  <label key={v.id} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer text-xs select-none transition ${isChecked ? 'border-[#D4A017] bg-[#D4A017]/5' : 'bg-card hover:bg-muted/30'}`}>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedVendorIds(prev => [...prev, v.id]);
+                        } else {
+                          setSelectedVendorIds(prev => prev.filter(id => id !== v.id));
+                        }
+                      }}
+                      className="accent-[#D4A017] rounded size-4"
+                    />
+                    <span>{v.full_name || v.username}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-muted-foreground block flex items-center gap-1">
-              <Calendar className="size-3 text-gold-gradient" /> من تاريخ
-            </label>
-            <input 
-              type="date" 
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="w-full h-10 border rounded-xl px-3 bg-card text-sm focus:outline-none focus:ring-1 focus:ring-gold-gradient/50"
-            />
-          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground block flex items-center gap-1">
+                <Calendar className="size-3 text-gold-gradient" /> من تاريخ
+              </label>
+              <input 
+                type="date" 
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-full h-10 border rounded-xl px-3 bg-card text-sm focus:outline-none focus:ring-1 focus:ring-gold-gradient/50"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-muted-foreground block flex items-center gap-1">
-              <Calendar className="size-3 text-gold-gradient" /> إلى تاريخ
-            </label>
-            <input 
-              type="date" 
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="w-full h-10 border rounded-xl px-3 bg-card text-sm focus:outline-none focus:ring-1 focus:ring-gold-gradient/50"
-            />
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground block flex items-center gap-1">
+                <Calendar className="size-3 text-gold-gradient" /> إلى تاريخ
+              </label>
+              <input 
+                type="date" 
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-full h-10 border rounded-xl px-3 bg-card text-sm focus:outline-none focus:ring-1 focus:ring-gold-gradient/50"
+              />
+            </div>
           </div>
         </div>
 
-        {selectedVendorId && (
+        {selectedVendorIds.length > 0 && (
           <div className="mt-6 flex gap-3">
             <Button
               onClick={handleExportPDF}
@@ -245,7 +273,7 @@ export function InventoryReportsTab() {
         )}
       </div>
 
-      {selectedVendorId && (
+      {selectedVendorIds.length > 0 && (
         <div className="rounded-3xl border bg-card overflow-hidden shadow-lg border-gold-gradient/10 animate-in fade-in duration-300">
           <div className="p-5 border-b bg-muted/20 flex items-center justify-between">
             <h3 className="font-bold">معاينة السلع قبل التصدير</h3>

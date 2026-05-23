@@ -66,10 +66,18 @@ function Products() {
     return ["all", ...Array.from(new Set((products ?? []).map((p) => p.category)))];
   }, [products]);
 
+  const getProductPrice = useMemo(() => {
+    return (p: any) => {
+      const base = Number(p.price) || 0;
+      return bestPercent > 0 ? Math.round(base * (1 - bestPercent / 100)) : base;
+    };
+  }, [bestPercent]);
+
   const priceCap = useMemo(() => {
-    const max = Math.max(0, ...(products ?? []).map((p) => Number(p.price)));
+    const prices = (products ?? []).map((p) => getProductPrice(p)).filter((v) => !isNaN(v));
+    const max = prices.length > 0 ? Math.max(...prices) : 0;
     return Math.ceil(max / 100) * 100 || 1000;
-  }, [products]);
+  }, [products, getProductPrice]);
   
   const effectiveMax = maxPrice ?? priceCap;
 
@@ -77,28 +85,29 @@ function Products() {
     return (products ?? []).filter((p) => {
       const searchStr = `${p.name} ${p.category} ${p.description || ""} ${p.colors?.join(" ") || ""}`.toLowerCase();
       const query = q.toLowerCase();
+      const finalPrice = getProductPrice(p);
       
       return (
         (cat === "all" || p.category === cat) &&
         searchStr.includes(query) &&
-        Number(p.price) <= effectiveMax
+        finalPrice <= effectiveMax
       );
     });
-  }, [products, cat, q, effectiveMax]);
+  }, [products, cat, q, effectiveMax, getProductPrice]);
 
   const sortedAndFiltered = useMemo(() => {
     let list = [...filtered];
     if (sortBy === "cheapest") {
-      list.sort((a, b) => Number(a.price) - Number(b.price));
+      list.sort((a, b) => getProductPrice(a) - getProductPrice(b));
     } else if (sortBy === "expensive") {
-      list.sort((a, b) => Number(b.price) - Number(a.price));
+      list.sort((a, b) => getProductPrice(b) - getProductPrice(a));
     } else if (sortBy === "bestsellers") {
       list.sort((a, b) => Number(b.stock) - Number(a.stock));
     } else { // "newest"
       list.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
     }
     return list;
-  }, [filtered, sortBy]);
+  }, [filtered, sortBy, getProductPrice]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
@@ -148,7 +157,7 @@ function Products() {
           type="range" min={0} max={priceCap} step={50}
           value={effectiveMax}
           onChange={(e) => setMaxPrice(Number(e.target.value))}
-          className="flex-1 accent-foreground"
+          className="flex-1 accent-[#D4A017] cursor-pointer"
         />
         <div className="text-sm font-bold text-gold min-w-24 text-center">
           حتى {effectiveMax} ج.م
