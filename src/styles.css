@@ -1,13 +1,14 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@500;700;900&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --font-sans: 'Cairo', system-ui, sans-serif;
-  --font-display: 'Playfair Display', 'Cairo', serif;
+  --font-display: 'Amiri', 'Playfair Display', 'Cairo', serif;
+  --font-serif: 'Amiri', serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -114,7 +115,10 @@
     font-feature-settings: "ss01", "cv11";
   }
   .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
+  .font-serif { font-family: var(--font-serif); }
   .ltr { direction: ltr; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
 @layer utilities {

@@ -78,8 +78,8 @@ export function EditUserDialog({ user, onClose }: { user: any, onClose: () => vo
     }
 
     if (selectedRoles.length > 0) {
-      const inserts = selectedRoles.map(r => ({ user_id: user.id, role: r }));
-      const { error: insertRolesError } = await supabase.from("user_roles").insert(inserts);
+      const inserts = selectedRoles.map(r => ({ user_id: user.id, role: r as any }));
+      const { error: insertRolesError } = await supabase.from("user_roles").insert(inserts as any);
       if (insertRolesError) {
         setLoading(false);
         return toast.error("خطأ في إدخال الصلاحيات الجديدة: " + insertRolesError.message);

@@ -29,6 +29,7 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
   const setRole = async (uid: string, role: "admin" | "vendor" | "customer" | "delivery", on: boolean) => {
     if (on) await supabase.from("user_roles").insert({ user_id: uid, role });
     else await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", role);
+    if (currentUser) await supabase.from("activity_logs").insert({ user_id: currentUser.id, action: on ? "admin_role_grant" : "admin_role_revoke", details: { target_user: uid, role } as never });
     qc.invalidateQueries({ queryKey: ["admin-profiles"] });
     toast.success("تم تحديث صلاحيات المستخدم بنجاح");
   };
@@ -73,6 +74,7 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
     } else {
       toast.success(newStatus ? "تم حظر المستخدم بنجاح" : "تم فك حظر المستخدم");
     }
+    if (currentUser) await supabase.from("activity_logs").insert({ user_id: currentUser.id, action: newStatus ? "admin_user_ban" : "admin_user_unban", details: { target_user: uid } as never });
     
     qc.invalidateQueries({ queryKey: ["admin-profiles"] });
     qc.invalidateQueries({ queryKey: ["site-settings"] });
@@ -86,6 +88,7 @@ export function UsersTab({ profiles }: { profiles: any[] }) {
     if (!confirm("هل أنت متأكد من حذف هذا الحساب نهائياً؟ لا يمكن التراجع عن هذا الإجراء.")) return;
     const { error } = await supabase.from("profiles").delete().eq("id", uid);
     if (error) return toast.error(error.message);
+    if (currentUser) await supabase.from("activity_logs").insert({ user_id: currentUser.id, action: "admin_user_delete", details: { target_user: uid } as never });
     qc.invalidateQueries({ queryKey: ["admin-profiles"] });
     toast.success("تم حذف بيانات المستخدم من النظام");
   };

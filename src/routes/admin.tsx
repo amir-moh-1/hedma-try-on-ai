@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Edit, Package } from "lucide-react";
+import { Edit, Package, X } from "lucide-react";
 import { toast } from "sonner";
 import { formatEGP } from "@/lib/format";
 

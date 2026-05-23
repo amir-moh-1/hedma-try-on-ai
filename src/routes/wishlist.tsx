@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 import { Heart, ShoppingBag } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/auth";
+import { useWishlistIds } from "@/lib/wishlist";
 
 export const Route = createFileRoute("/wishlist")({
   head: () => ({
@@ -16,7 +18,10 @@ export const Route = createFileRoute("/wishlist")({
 });
 
 function Wishlist() {
-  const [wishlistIds, setWishlistIds] = useState<string[]>(() => {
+  const { user } = useAuth();
+  
+  // Local guest wishlist state
+  const [localWishlistIds, setLocalWishlistIds] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem("hedma-wishlist") || "[]");
     } catch {
@@ -27,9 +32,9 @@ function Wishlist() {
   useEffect(() => {
     const handleWishlistChange = () => {
       try {
-        setWishlistIds(JSON.parse(localStorage.getItem("hedma-wishlist") || "[]"));
+        setLocalWishlistIds(JSON.parse(localStorage.getItem("hedma-wishlist") || "[]"));
       } catch {
-        setWishlistIds([]);
+        setLocalWishlistIds([]);
       }
     };
 
@@ -41,20 +46,31 @@ function Wishlist() {
     };
   }, []);
 
+  // Database wishlist query (enabled if user is logged in)
+  const { data: dbWishlistSet } = useWishlistIds();
+  const dbWishlistIds = dbWishlistSet ? Array.from(dbWishlistSet) : [];
+
+  // Effective wishlist IDs depending on auth status
+  const effectiveIds = user ? dbWishlistIds : localWishlistIds;
+
   const { data: products, isLoading } = useQuery({
-    queryKey: ["wishlist-products", wishlistIds],
-    enabled: wishlistIds.length > 0,
+    queryKey: ["wishlist-products-resolved", effectiveIds, user?.id],
+    enabled: effectiveIds.length > 0,
     queryFn: async () => {
       const { data } = await supabase
         .from("products")
-        .select("id,name,price,image_url,category,stock,created_at,secondary_image_url")
-        .in("id", wishlistIds)
-        .eq("active", true);
-      return data ?? [];
+        .select("id,name,price,image_url,category,stock,created_at,variants")
+        .in("id", effectiveIds);
+      
+      return (data ?? []).map((prod: any) => {
+        const variants = Array.isArray(prod.variants) ? prod.variants : [];
+        const secondary_image_url = variants.find((v: any) => v?.image_url && v.image_url !== prod.image_url)?.image_url ?? null;
+        return { ...prod, secondary_image_url };
+      });
     },
   });
 
-  const displayProducts = wishlistIds.length > 0 ? (products ?? []) : [];
+  const displayProducts = effectiveIds.length > 0 ? (products ?? []) : [];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
@@ -78,7 +94,9 @@ function Wishlist() {
           <Heart className="size-16 mx-auto mb-4 text-muted-foreground opacity-60" />
           <h2 className="font-display text-xl font-bold mb-2">قائمة المفضلة فارغة</h2>
           <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
-            لم تقم بإضافة أي منتجات إلى المفضلة بعد. تصفح المتجر وأضف ما يعجبك بضغطة زر.
+            {user
+              ? "لم تقم بإضافة أي منتجات إلى المفضلة بعد. تصفح المتجر وأضف ما يعجبك بضغطة زر."
+              : "لم تقم بإضافة أي منتجات إلى المفضلة بعد. تصفح المتجر وأضف ما يعجبك. يمكنك تسجيل الدخول لمزامنة المفضلة عبر أجهزتك."}
           </p>
           <Link
             to="/products"

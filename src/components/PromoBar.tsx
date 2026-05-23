@@ -6,7 +6,7 @@ export function PromoBar() {
     queryKey: ["site-settings"],
     queryFn: async () => {
       const { data } = await supabase.from("site_settings").select("*").eq("id", "main").maybeSingle();
-      return data;
+      return data as any;
     },
   });
 
