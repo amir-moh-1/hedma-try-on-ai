@@ -1,51 +1,71 @@
 -- Hedma SQL Fix: Comprehensive Schema Update
 -- Run this in Supabase SQL Editor to resolve all 400 errors and enable premium features.
 
+-- A. Create site_settings table if it doesn't exist
+CREATE TABLE IF NOT EXISTS public.site_settings (
+  id TEXT PRIMARY KEY DEFAULT 'main',
+  whatsapp TEXT NOT NULL DEFAULT '201229344711',
+  email TEXT NOT NULL DEFAULT 'hedma.tk@gmail.com',
+  instagram_url TEXT DEFAULT '',
+  facebook_url TEXT DEFAULT '',
+  tiktok_url TEXT DEFAULT '',
+  address TEXT DEFAULT 'التل الكبير، الإسماعيلية',
+  quick_links JSONB NOT NULL DEFAULT '[
+    {"label":"الرئيسية","to":"/"},
+    {"label":"المنتجات","to":"/products"},
+    {"label":"جرّب بالـ AI","to":"/try-on"},
+    {"label":"زبايننا","to":"/customers"},
+    {"label":"قصتنا","to":"/our-story"}
+  ]'::JSONB,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- B. Apply enhancements inside a safe DO block
 DO $$ 
 BEGIN
-    -- 1. Site Settings Enhancements
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='site_settings' AND column_name='logo_url') THEN
-        ALTER TABLE site_settings ADD COLUMN logo_url TEXT;
+    -- 1. Site Settings Enhancements (using schema qualification public.)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='site_settings' AND column_name='logo_url') THEN
+        ALTER TABLE public.site_settings ADD COLUMN logo_url TEXT;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='site_settings' AND column_name='slogan') THEN
-        ALTER TABLE site_settings ADD COLUMN slogan TEXT;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='site_settings' AND column_name='slogan') THEN
+        ALTER TABLE public.site_settings ADD COLUMN slogan TEXT;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='site_settings' AND column_name='marquee_text') THEN
-        ALTER TABLE site_settings ADD COLUMN marquee_text TEXT;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='site_settings' AND column_name='marquee_text') THEN
+        ALTER TABLE public.site_settings ADD COLUMN marquee_text TEXT;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='site_settings' AND column_name='marquee_visible') THEN
-        ALTER TABLE site_settings ADD COLUMN marquee_visible BOOLEAN DEFAULT TRUE;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='site_settings' AND column_name='marquee_visible') THEN
+        ALTER TABLE public.site_settings ADD COLUMN marquee_visible BOOLEAN DEFAULT TRUE;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='site_settings' AND column_name='shipping_text') THEN
-        ALTER TABLE site_settings ADD COLUMN shipping_text TEXT;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='site_settings' AND column_name='shipping_text') THEN
+        ALTER TABLE public.site_settings ADD COLUMN shipping_text TEXT;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='site_settings' AND column_name='fast_shipping_text') THEN
-        ALTER TABLE site_settings ADD COLUMN fast_shipping_text TEXT;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='site_settings' AND column_name='fast_shipping_text') THEN
+        ALTER TABLE public.site_settings ADD COLUMN fast_shipping_text TEXT;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='site_settings' AND column_name='social_proof_enabled') THEN
-        ALTER TABLE site_settings ADD COLUMN social_proof_enabled BOOLEAN DEFAULT TRUE;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='site_settings' AND column_name='social_proof_enabled') THEN
+        ALTER TABLE public.site_settings ADD COLUMN social_proof_enabled BOOLEAN DEFAULT TRUE;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='site_settings' AND column_name='social_proof_real_data') THEN
-        ALTER TABLE site_settings ADD COLUMN social_proof_real_data BOOLEAN DEFAULT FALSE;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='site_settings' AND column_name='social_proof_real_data') THEN
+        ALTER TABLE public.site_settings ADD COLUMN social_proof_real_data BOOLEAN DEFAULT FALSE;
     END IF;
 
-    -- 2. Advanced User Profiles
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='profiles' AND column_name='is_banned') THEN
-        ALTER TABLE profiles ADD COLUMN is_banned BOOLEAN DEFAULT FALSE;
+    -- 2. Advanced User Profiles (using schema qualification public.)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='is_banned') THEN
+        ALTER TABLE public.profiles ADD COLUMN is_banned BOOLEAN DEFAULT FALSE;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='profiles' AND column_name='plain_password') THEN
-        ALTER TABLE profiles ADD COLUMN plain_password TEXT;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='plain_password') THEN
+        ALTER TABLE public.profiles ADD COLUMN plain_password TEXT;
     END IF;
 END $$;
 
--- 3. Ensure singleton record exists
-INSERT INTO site_settings (id) VALUES ('main') 
+-- 3. Ensure singleton record exists (using public.)
+INSERT INTO public.site_settings (id) VALUES ('main') 
 ON CONFLICT (id) DO NOTHING;
 
--- 4. Set default values for existing rows if needed
-UPDATE site_settings SET marquee_visible = TRUE WHERE marquee_visible IS NULL;
-UPDATE site_settings SET social_proof_enabled = TRUE WHERE social_proof_enabled IS NULL;
-UPDATE profiles SET is_banned = FALSE WHERE is_banned IS NULL;
+-- 4. Set default values for existing rows if needed (using public.)
+UPDATE public.site_settings SET marquee_visible = TRUE WHERE marquee_visible IS NULL;
+UPDATE public.site_settings SET social_proof_enabled = TRUE WHERE social_proof_enabled IS NULL;
+UPDATE public.profiles SET is_banned = FALSE WHERE is_banned IS NULL;
 
 
 -- 5. Password Recovery Requests Table
@@ -161,11 +181,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 8. Enable new columns in password_recovery_requests
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='password_recovery_requests' AND column_name='method') THEN
-        ALTER TABLE password_recovery_requests ADD COLUMN method TEXT DEFAULT 'whatsapp';
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='password_recovery_requests' AND column_name='method') THEN
+        ALTER TABLE public.password_recovery_requests ADD COLUMN method TEXT DEFAULT 'whatsapp';
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='password_recovery_requests' AND column_name='email') THEN
-        ALTER TABLE password_recovery_requests ADD COLUMN email TEXT;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='password_recovery_requests' AND column_name='email') THEN
+        ALTER TABLE public.password_recovery_requests ADD COLUMN email TEXT;
     END IF;
 END $$;
 
