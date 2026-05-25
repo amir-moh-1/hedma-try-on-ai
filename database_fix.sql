@@ -1,4 +1,4 @@
--- Hedma SQL Fix: Complete Database Schema and Enhancements Initializer
+-- Hedma SQL Fix: Complete Database Schema and Schema-Cache Reload
 -- Run this in Supabase SQL Editor to resolve all errors and enable premium features.
 
 -- 1. Create app_role Type if it doesn't exist
@@ -9,9 +9,9 @@ BEGIN
     END IF;
 END $$;
 
--- 2. Create profiles table if it doesn't exist
+-- 2. Create profiles table if it doesn't exist (using loose UUID without strict foreign key to prevent cross-schema permissions issues)
 CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY,
   username TEXT UNIQUE NOT NULL,
   full_name TEXT,
   phone TEXT,
@@ -19,18 +19,18 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Enable RLS on profiles if not already enabled
+-- Enable RLS on profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- 3. Create user_roles table if it doesn't exist
+-- 3. Create user_roles table if it doesn't exist (using loose UUID for user_id)
 CREATE TABLE IF NOT EXISTS public.user_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
   role public.app_role NOT NULL,
   UNIQUE(user_id, role)
 );
 
--- Enable RLS on user_roles if not already enabled
+-- Enable RLS on user_roles
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 
 -- 4. Create site_settings table if it doesn't exist
@@ -228,7 +228,7 @@ END $$;
 -- 12. Create user_notifications Table
 CREATE TABLE IF NOT EXISTS public.user_notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id UUID,
     title TEXT NOT NULL,
     content TEXT,
     read BOOLEAN DEFAULT FALSE,
@@ -304,3 +304,6 @@ CREATE POLICY "admin manage roles" ON public.user_roles FOR ALL TO authenticated
             WHERE ur.user_id = auth.uid() AND ur.role = 'admin'
         )
     );
+
+-- 15. Force reload schema cache in PostgREST immediately
+NOTIFY pgrst, 'reload schema';
