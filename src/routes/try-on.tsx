@@ -18,9 +18,21 @@ export const Route = createFileRoute("/try-on")({
   component: TryOn,
 });
 
-const fileToDataUrl = (f: File) => new Promise<string>((res, rej) => {
-  const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(f);
-});
+const compressImage = (f: File, maxW = 800, quality = 0.7): Promise<string> =>
+  new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxW / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      res(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = rej;
+    img.src = URL.createObjectURL(f);
+  });
 
 function TryOn() {
   const { product: presetProduct } = Route.useSearch();
@@ -70,7 +82,7 @@ function TryOn() {
   const onFile = async (f: File | null) => {
     if (!f) return;
     if (f.size > 5 * 1024 * 1024) return toast.error("الصورة أكبر من 5MB");
-    setPersonUrl(await fileToDataUrl(f));
+    setPersonUrl(await compressImage(f));
     setResultUrl(null);
   };
 
@@ -94,7 +106,12 @@ function TryOn() {
       setResultUrl(d.image);
       toast.success("اتجهزت الصورة ✨");
     } catch (e) {
-      toast.error("حصل خطأ", { description: e instanceof Error ? e.message : "" });
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('FunctionsFetchError') || msg.includes('Failed to fetch')) {
+        toast.error("تعذر الاتصال بخادم AI", { description: "تحقق من اتصالك بالإنترنت وحاول تاني" });
+      } else {
+        toast.error("حصل خطأ في التوليد", { description: msg });
+      }
     } finally { setBusy(false); }
   };
 
@@ -108,12 +125,12 @@ function TryOn() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
+    <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
       <div className="text-center mb-8">
         <span className="inline-flex items-center gap-1 text-xs font-semibold rounded-full border bg-card px-3 py-1">
           <Sparkles className="size-3.5 text-gold-gradient" /> ذكاء اصطناعي
         </span>
-        <h1 className="mt-3 font-display text-4xl md:text-5xl font-bold">
+        <h1 className="mt-3 font-display text-2xl sm:text-4xl md:text-5xl font-bold">
           جرّب اللبس <span className="text-gold-gradient">عليك</span> قبل ما تشتري
         </h1>
         <p className="text-muted-foreground mt-2">ارفع صورتك واختر لحد 4 قطع (تيشيرت + بنطلون + جزمة + إكسسوار) ونوريك الإطلالة كاملة.</p>

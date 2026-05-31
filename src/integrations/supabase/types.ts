@@ -463,6 +463,90 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          id: string
+          title: string
+          content: string | null
+          type: string
+          read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          content?: string | null
+          type?: string
+          read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          content?: string | null
+          type?: string
+          read?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      user_notifications: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          content: string | null
+          read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          content?: string | null
+          read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          content?: string | null
+          read?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      password_recovery_requests: {
+        Row: {
+          id: string
+          username: string
+          phone: string | null
+          email: string | null
+          method: string
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          username: string
+          phone?: string | null
+          email?: string | null
+          method?: string
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          username?: string
+          phone?: string | null
+          email?: string | null
+          method?: string
+          status?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -474,6 +558,17 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      admin_update_user: {
+        Args: {
+          target_user_id: string
+          new_username?: string
+          new_email?: string
+          new_password?: string | null
+          new_phone?: string | null
+          new_full_name?: string | null
+        }
+        Returns: Json
       }
     }
     Enums: {

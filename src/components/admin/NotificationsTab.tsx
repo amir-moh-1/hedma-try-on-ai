@@ -54,7 +54,7 @@ export function NotificationsTab() {
     queryKey: ["admin-sent-notifications"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_notifications" as any)
+        .from("user_notifications")
         .select("id, user_id, title, content, read, created_at, profiles(username, full_name)")
         .order("created_at", { ascending: false })
         .limit(50);
@@ -75,7 +75,7 @@ export function NotificationsTab() {
     setSending(true);
     try {
       if (recipientType === "specific") {
-        const { error } = await supabase.from("user_notifications" as any).insert({
+        const { error } = await supabase.from("user_notifications").insert({
           user_id: selectedUserId,
           title,
           content: content || null,
@@ -96,7 +96,7 @@ export function NotificationsTab() {
         }));
 
         // Insert in batches or single call
-        const { error } = await supabase.from("user_notifications" as any).insert(rows);
+        const { error } = await supabase.from("user_notifications").insert(rows);
         if (error) throw error;
         toast.success(`تم إرسال الإشعار بنجاح لـ ${profiles.length} عميل`);
       }

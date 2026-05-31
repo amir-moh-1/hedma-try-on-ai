@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { catAr } from "@/lib/categories";
 
 export const Route = createFileRoute("/products")({
-  validateSearch: (search: Record<string, unknown>) => {
+  validateSearch: (search: Record<string, unknown>): { category?: string } => {
     return {
       category: (search.category as string) || undefined,
     };

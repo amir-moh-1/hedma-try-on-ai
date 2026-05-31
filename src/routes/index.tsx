@@ -77,7 +77,7 @@ function Home() {
               <span className="text-[10px] font-medium opacity-60 uppercase tracking-[0.2em]">جرب اللبس بالذكاء الاصطناعي</span>
             </div>
 
-            <h1 className="font-serif font-bold leading-[1] text-6xl md:text-8xl mb-8">
+            <h1 className="font-serif font-bold leading-[1] text-4xl sm:text-6xl md:text-8xl mb-8">
               أناقتك
               <br />
               <span className="text-gold italic">بلمسة هدمة</span>
@@ -147,7 +147,7 @@ function Home() {
                 key={cat.key}
                 to="/products"
                 search={{ category: cat.key } as any}
-                className="flex-none w-32 px-6 py-8 bg-card border border-gold/5 flex flex-col items-center justify-center gap-4 transition-all hover:border-gold hover:shadow-[0_10px_30px_-10px_rgba(212,160,23,0.35)] active:scale-95"
+                className="flex-none w-24 sm:w-32 px-4 sm:px-6 py-6 sm:py-8 bg-card border border-gold/5 flex flex-col items-center justify-center gap-4 transition-all hover:border-gold hover:shadow-[0_10px_30px_-10px_rgba(212,160,23,0.35)] active:scale-95"
               >
                 <span className="text-3xl grayscale brightness-75 group-hover:grayscale-0">{cat.icon}</span>
                 <span className="text-[10px] font-black tracking-[0.2em] uppercase whitespace-nowrap">{cat.label}</span>

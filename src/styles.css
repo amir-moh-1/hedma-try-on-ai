@@ -156,3 +156,34 @@ button[title*="Lovable"] {
   pointer-events: none !important;
   z-index: -9999 !important;
 }
+
+/* ===== Mobile Responsiveness Fixes ===== */
+@media (max-width: 480px) {
+  /* Prevent horizontal overflow */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
+  /* Hero section fixes */
+  .font-serif.font-bold.leading-\[1\] {
+    font-size: 2.5rem !important;
+  }
+  
+  /* Tighter padding on mobile */
+  section {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Bottom nav safe area */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@media (max-width: 360px) {
+  .font-serif.font-bold.leading-\[1\] {
+    font-size: 2rem !important;
+  }
+}

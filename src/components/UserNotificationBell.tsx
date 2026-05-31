@@ -48,7 +48,7 @@ export function UserNotificationBell() {
     enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_notifications" as any)
+        .from("user_notifications")
         .select("*")
         .eq("user_id", userId!)
         .order("created_at", { ascending: false })
@@ -120,7 +120,7 @@ export function UserNotificationBell() {
 
   const handleMarkRead = async (id: string) => {
     await supabase
-      .from("user_notifications" as any)
+      .from("user_notifications")
       .update({ read: true })
       .eq("id", id);
     qc.invalidateQueries({ queryKey: ["user_notifications", userId] });
@@ -129,7 +129,7 @@ export function UserNotificationBell() {
   const handleMarkAllRead = async () => {
     if (!userId) return;
     const { error } = await supabase
-      .from("user_notifications" as any)
+      .from("user_notifications")
       .update({ read: true })
       .eq("user_id", userId)
       .eq("read", false);

@@ -59,7 +59,17 @@ Combine ALL the garments naturally on the same person in a single output image. 
     }
 
     const data = await r.json();
-    const img = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    let img = data.choices?.[0]?.message?.images?.[0]?.image_url?.url || 
+              (data.choices?.[0]?.message?.content && Array.isArray(data.choices[0].message.content) && 
+               data.choices[0].message.content.find(c => c.type === "image_url" || c.image_url)?.image_url?.url) ||
+              data.choices?.[0]?.message?.content ||
+              data.images?.[0]?.url ||
+              data.images?.[0]?.image_url?.url;
+    
+    if (typeof img === "object" && img !== null) {
+      img = img.url || img.image_url?.url;
+    }
+    
     if (!img) return new Response(JSON.stringify({ error: "No image returned" }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
     return new Response(JSON.stringify({ image: img }), { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (e) {
