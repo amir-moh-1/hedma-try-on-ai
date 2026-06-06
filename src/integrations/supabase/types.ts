@@ -179,6 +179,33 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          read: boolean
+          title: string
+          type: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          title: string
+          type?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          title?: string
+          type?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           coupon_code: string | null
@@ -227,6 +254,30 @@ export type Database = {
           total?: number
           tracking_note?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      password_recovery_requests: {
+        Row: {
+          created_at: string
+          id: string
+          phone: string | null
+          status: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phone?: string | null
+          status?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phone?: string | null
+          status?: string
+          username?: string
         }
         Relationships: []
       }
@@ -424,6 +475,41 @@ export type Database = {
         }
         Relationships: []
       }
+      user_notifications: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          read: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -468,6 +554,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_update_user: {
+        Args: {
+          new_email: string
+          new_full_name?: string
+          new_password?: string
+          new_phone?: string
+          new_username: string
+          target_user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

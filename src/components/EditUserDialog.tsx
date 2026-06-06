@@ -59,9 +59,9 @@ export function EditUserDialog({ user, onClose }: { user: any, onClose: () => vo
       target_user_id: user.id,
       new_username: form.username.trim(),
       new_email: email,
-      new_password: form.password.trim() || null,
-      new_phone: form.phone.trim() || null,
-      new_full_name: form.full_name.trim() || null
+      new_password: form.password.trim() || undefined,
+      new_phone: form.phone.trim() || undefined,
+      new_full_name: form.full_name.trim() || undefined
     });
 
     if (rpcError) {
