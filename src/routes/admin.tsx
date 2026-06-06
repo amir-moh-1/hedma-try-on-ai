@@ -14,8 +14,8 @@ import { DashboardTab } from "@/components/DashboardTab";
 import { OrdersTab } from "@/components/OrdersTab";
 import { CustomersTab } from "@/components/CustomersTab";
 import { MerchantsTab } from "@/components/MerchantsTab";
-import { ProductsTab } from "@/components/admin/ProductsTab"; // Wait, I'll build this logic inline or move it
-import { CouponsTab } from "@/components/admin/CouponsTab"; // Same here
+import { ProductsTab } from "@/components/admin/ProductsTab";
+import { CouponsTab } from "@/components/admin/CouponsTab";
 import { UsersTab } from "@/components/admin/UsersTab";
 import { SettingsTab } from "@/components/SettingsTab";
 import { PresetsTab } from "@/components/PresetsTab";
@@ -25,6 +25,7 @@ import { ProductControlTab } from "@/components/admin/ProductControlTab";
 import { InventoryReportsTab } from "@/components/admin/InventoryReportsTab";
 import { PasswordRecoveryTab } from "@/components/admin/PasswordRecoveryTab";
 import { NotificationsTab } from "@/components/admin/NotificationsTab";
+import { PasswordManagerTab } from "@/components/admin/PasswordManagerTab";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
 
@@ -81,6 +82,7 @@ function AdminPanel() {
               {activeTab === "orders" && "الطلبيات"}
               {activeTab === "merchants" && "المحلات والتجار"}
               {activeTab === "users" && "المستخدمين والصلاحيات"}
+              {activeTab === "passwords" && "🔐 مدير كلمات المرور"}
               {activeTab === "recovery" && "استعادة الحسابات"}
               {activeTab === "notifications" && "📢 إرسال إشعار"}
               {activeTab === "customers" && "قاعدة العملاء"}
@@ -112,6 +114,12 @@ function AdminPanel() {
           {activeTab === "users" && (
             <div className="space-y-6 animate-in slide-in-from-left-4 duration-500">
                <UsersTab profiles={profiles ?? []} />
+            </div>
+          )}
+
+          {activeTab === "passwords" && (
+            <div className="space-y-6 animate-in slide-in-from-left-4 duration-500">
+               <PasswordManagerTab />
             </div>
           )}
 

@@ -24,6 +24,7 @@ export function AdminSidebar({ activeTab, setActiveTab }: { activeTab: string, s
     { id: "inventory", label: "الجرد والتقارير", icon: BrainCircuit },
     { id: "coupons", label: "العروض والكوبونات", icon: Ticket },
     { id: "users", label: "المستخدمين والصلاحيات", icon: Users },
+    { id: "passwords", label: "🔐 كلمات المرور", icon: Key },
     { id: "recovery", label: "استعادة الحسابات", icon: Key },
     { id: "notifications", label: "📢 الإشعارات", icon: Bell },
     { id: "customers", label: "العملاء", icon: UserCircle },
