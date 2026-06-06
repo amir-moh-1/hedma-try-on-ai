@@ -23,6 +23,11 @@ import { useEffect, useState, useRef } from "react";
 
 import appCss from "../styles.css?url";
 
+// Module-level retry count to persist across ErrorComponent mounts
+let globalRetryCount = 0;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1500;
+
 function BrandingMeta() {
   const s = useSiteSettings();
 
@@ -80,27 +85,39 @@ function NotFoundComponent() {
   );
 }
 
-/* [2] Silent auto-retry error component — no manual "حاول تاني" button */
+/* Fixed auto-retry error component — prevents infinite loops by using module-level retry count */
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
-  const retryCount = useRef(0);
-  const maxRetries = 3;
+  const [shouldRetry, setShouldRetry] = useState(true);
+  const hasSetupRetry = useRef(false);
 
   useEffect(() => {
     console.error("[Hedma] Error caught:", error);
 
-    if (retryCount.current < maxRetries) {
-      retryCount.current += 1;
+    // Only setup retry once per mount
+    if (hasSetupRetry.current) return;
+    hasSetupRetry.current = true;
+
+    // If we haven't exceeded max retries, attempt one more retry
+    if (globalRetryCount < MAX_RETRIES) {
+      globalRetryCount += 1;
+      console.log(`[Hedma] Retry attempt ${globalRetryCount}/${MAX_RETRIES}`);
+      
       const timer = setTimeout(() => {
         router.invalidate();
         reset();
-      }, 1500);
+      }, RETRY_DELAY);
+
       return () => clearTimeout(timer);
+    } else {
+      // Max retries reached, stop retrying
+      setShouldRetry(false);
+      console.log("[Hedma] Max retries exhausted, showing error UI");
     }
-  }, [error, reset, router]);
+  }, []); // Empty dependency array - only run once on mount
 
   // While retrying silently, show a loading spinner
-  if (retryCount.current < maxRetries) {
+  if (shouldRetry && globalRetryCount < MAX_RETRIES) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center bg-background px-4">
         <div className="text-center space-y-4">
@@ -111,7 +128,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     );
   }
 
-  // After max retries exhausted, show a simple message with a home link (no manual retry)
+  // After max retries exhausted, show error message
   return (
     <div className="flex min-h-[60vh] items-center justify-center bg-background px-4">
       <div className="max-w-sm text-center space-y-4">
@@ -122,7 +139,18 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="text-sm text-muted-foreground leading-relaxed">
           لم نتمكن من تحميل الصفحة. يرجى التحقق من اتصالك بالإنترنت.
         </p>
-        <a href="/" className="inline-flex items-center justify-center rounded-xl gradient-gold text-primary px-6 py-2.5 text-sm font-bold shadow-luxe">
+        <button 
+          onClick={() => {
+            globalRetryCount = 0; // Reset retry count
+            hasSetupRetry.current = false; // Reset flag
+            setShouldRetry(true);
+            reset();
+          }}
+          className="inline-flex items-center justify-center rounded-xl gradient-gold text-primary px-6 py-2.5 text-sm font-bold shadow-luxe"
+        >
+          جرب من جديد
+        </button>
+        <a href="/" className="block text-sm text-muted-foreground underline hover:text-foreground transition-colors">
           العودة للرئيسية
         </a>
       </div>
@@ -137,21 +165,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Hedma | هدمة - أناقة عصرية" },
-      { name: "description", content: "Hedma هدمة - متجر ملابس عصري بأحدث الموديلات في التل الكبير . تيشيرتات، بناطيل، كوتشيات، إكسسوارات. جرّب اللبس بالذكاء الاصطناعي قبل ما تشتري." },
+      { name: "description", content: "Hedma هدمة - متجر ملابس عصري بأحدث الموديلات في التل الكبير . تيشيرتات، بناطيل، كوتشيات، [...]" },
       { property: "og:title", content: "Hedma | هدمة - أناقة عصرية" },
-      { property: "og:description", content: "Hedma هدمة - متجر ملابس عصري بأحدث الموديلات في التل الكبير . تيشيرتات، بناطيل، كوتشيات، إكسسوارات. جرّب اللبس بالذكاء الاصطناعي قبل ما تشتري." },
+      { property: "og:description", content: "Hedma هدمة - متجر ملابس عصري بأحدث الموديلات في التل الكبير . تيشيرتات، بناطيل، كوتشيات، [...]" },
       { property: "og:type", content: "website" },
       { name: "twitter:title", content: "Hedma | هدمة - أناقة عصرية" },
-      { name: "twitter:description", content: "Hedma هدمة - متجر ملابس عصري بأحدث الموديلات في التل الكبير . تيشيرتات، بناطيل، كوتشيات، إكسسوارات. جرّب اللبس بالذكاء الاصطناعي قبل ما تشتري." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0cb31ece-aea9-43bb-be67-f370c46c6b65/id-preview-3daf2b8f--8c743c40-e4cc-4796-8885-804baf17e779.lovable.app-1778421574580.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0cb31ece-aea9-43bb-be67-f370c46c6b65/id-preview-3daf2b8f--8c743c40-e4cc-4796-8885-804baf17e779.lovable.app-1778421574580.png" },
+      { name: "twitter:description", content: "Hedma هدمة - متجر ملابس عصري بأحدث الموديلات في التل الكبير . تيشيرتات، بناطيل، كوتشيات، [...]" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0cb31ece-aea9-43bb-be67-f370c46c6b65/id-preview-3daf2b8f--8c743c40-e4cc-4796-8885-804baf17e779.lovable.[...]" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0cb31ece-aea9-43bb-be67-f370c46c6b65/id-preview-3daf2b8f--8c743c40-e4cc-4796-8885-804baf17e779.lovable[...]" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@500;700;900&display=swap" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@500;7[...]" },
     ],
   }),
   shellComponent: RootShell,
