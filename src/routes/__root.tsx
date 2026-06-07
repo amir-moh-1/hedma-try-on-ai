@@ -23,10 +23,6 @@ import { useEffect, useState, useRef } from "react";
 
 import appCss from "../styles.css?url";
 
-// Module-level retry count to persist across ErrorComponent mounts
-let globalRetryCount = 0;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1500;
 
 function BrandingMeta() {
   const s = useSiteSettings();
