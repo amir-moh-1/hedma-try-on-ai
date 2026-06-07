@@ -14,21 +14,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get all users with their current passwords
-    const { data: passwords, error } = await supabase
-      .from("password_audit_log")
-      .select(`
-        id,
-        user_id,
-        encrypted_password,
-        username,
-        phone,
-        changed_at,
-        changed_by,
-        is_current
-      `)
-      .eq("is_current", true)
-      .order("changed_at", { ascending: false });
+    const { data: profiles, error } = await supabase
+      .from("profiles")
+      .select("id, username, phone, plain_password, created_at")
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Fetch error:", error);
@@ -38,12 +27,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    const data = (profiles ?? []).map((p: any) => ({
+      user_id: p.id,
+      username: p.username ?? "—",
+      phone: p.phone ?? "",
+      encrypted_password: p.plain_password ?? "غير متوفر",
+      changed_at: p.created_at,
+    }));
+
     return new Response(
-      JSON.stringify({
-        ok: true,
-        data: passwords ?? [],
-        count: passwords?.length ?? 0,
-      }),
+      JSON.stringify({ ok: true, data, count: data.length }),
       { headers: { ...cors, "Content-Type": "application/json" } }
     );
   } catch (error) {

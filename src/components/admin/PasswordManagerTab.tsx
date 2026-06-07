@@ -50,7 +50,7 @@ export function PasswordManagerTab() {
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
   };
 
-  const filteredPasswords = (passwords || []).filter(p => 
+  const filteredPasswords = ((passwords || []) as any[]).filter((p: any) => 
     p.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.phone?.includes(searchTerm) ||
     p.user_id.includes(searchTerm)
@@ -115,7 +115,7 @@ export function PasswordManagerTab() {
                   </td>
                 </tr>
               ) : (
-                filteredPasswords.map((p) => (
+                filteredPasswords.map((p: any) => (
                   <tr key={p.user_id} className="border-t hover:bg-muted/5 transition-colors">
                     {/* Username */}
                     <td className="p-4">
