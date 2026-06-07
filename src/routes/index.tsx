@@ -6,6 +6,7 @@ import { Sparkles, Truck, ShieldCheck, Headphones, ArrowLeft } from "lucide-reac
 import { CustomerPhotosGrid } from "@/components/CustomerPhotosGrid";
 import { Countdown } from "@/components/Countdown";
 import { AuthGate } from "@/components/AuthGate";
+import { SmartSearch } from "@/components/SmartSearch";
 import { useSiteSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -131,6 +132,13 @@ function Home() {
               className="size-full object-cover border border-white/50"
             />
           </div>
+        </div>
+      </section>
+
+      {/* SMART SEARCH */}
+      <section className="px-6 -mt-8 md:-mt-12 relative z-20">
+        <div className="mx-auto max-w-7xl">
+          <SmartSearch />
         </div>
       </section>
 
