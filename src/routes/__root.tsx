@@ -152,31 +152,26 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const path = router.state.location.pathname;
   const isAuthRoute = path === "/auth";
 
-  // Public routes that don't need authentication
-  const publicRoutes = ["/", "/products", "/our-story", "/customers", "/try-on", "/wishlist"];
-  const isPublicRoute = publicRoutes.some(r => path === r || path.startsWith("/product/") || path.startsWith("/track/"));
+  // Save last visited route so user can resume after login
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (path !== "/auth" && !path.startsWith("/admin") && !path.startsWith("/vendor") && !path.startsWith("/delivery")) {
+      try { localStorage.setItem("hedma:last_route", path); } catch {}
+    }
+  }, [path]);
+
+  // Only gate privileged dashboards. All other pages render immediately —
+  // no loading screen, no forced redirect on refresh. Cached session restores in background.
+  const isPrivilegedRoute = path.startsWith("/admin") || path.startsWith("/vendor") || path.startsWith("/delivery");
 
   useEffect(() => {
     if (loading) return;
-    // Only redirect to auth for protected routes when not logged in
-    if (!session && !isAuthRoute && !isPublicRoute) {
+    if (!session && isPrivilegedRoute) {
       router.navigate({ to: "/auth", replace: true });
     }
-  }, [session, loading, isAuthRoute, isPublicRoute, router]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-background">
-        <div className="text-center space-y-3">
-          <div className="mx-auto size-8 border-4 border-[#D4A017] border-t-transparent rounded-full animate-spin" />
-          <div className="text-sm font-bold text-gold-gradient animate-pulse">جاري التحميل...</div>
-        </div>
-      </div>
-    );
-  }
+  }, [session, loading, isPrivilegedRoute, router]);
 
   if (!session && isAuthRoute) {
-    // Render only the auth page, no chrome
     return <main className="min-h-screen">{children}</main>;
   }
 
