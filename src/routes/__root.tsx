@@ -23,10 +23,6 @@ import { useEffect, useState, useRef } from "react";
 
 import appCss from "../styles.css?url";
 
-// Module-level retry count to persist across ErrorComponent mounts
-let globalRetryCount = 0;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1500;
 
 function BrandingMeta() {
   const s = useSiteSettings();
@@ -85,77 +81,21 @@ function NotFoundComponent() {
   );
 }
 
-/* Fixed auto-retry error component — prevents infinite loops by using module-level retry count */
+/* Silent error component — never blocks the user. Logs and renders the page chrome with a small inline notice. */
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
-  const [shouldRetry, setShouldRetry] = useState(true);
-  const hasSetupRetry = useRef(false);
 
   useEffect(() => {
-    console.error("[Hedma] Error caught:", error);
+    console.error("[Hedma] Error caught (silent):", error);
+    // Attempt one silent recovery in the background, then give up — no UI takeover.
+    const t = setTimeout(() => {
+      try { router.invalidate(); reset(); } catch {}
+    }, 800);
+    return () => clearTimeout(t);
+  }, [error, router, reset]);
 
-    // Only setup retry once per mount
-    if (hasSetupRetry.current) return;
-    hasSetupRetry.current = true;
-
-    // If we haven't exceeded max retries, attempt one more retry
-    if (globalRetryCount < MAX_RETRIES) {
-      globalRetryCount += 1;
-      console.log(`[Hedma] Retry attempt ${globalRetryCount}/${MAX_RETRIES}`);
-      
-      const timer = setTimeout(() => {
-        router.invalidate();
-        reset();
-      }, RETRY_DELAY);
-
-      return () => clearTimeout(timer);
-    } else {
-      // Max retries reached, stop retrying
-      setShouldRetry(false);
-      console.log("[Hedma] Max retries exhausted, showing error UI");
-    }
-  }, []); // Empty dependency array - only run once on mount
-
-  // While retrying silently, show a loading spinner
-  if (shouldRetry && globalRetryCount < MAX_RETRIES) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center bg-background px-4">
-        <div className="text-center space-y-4">
-          <div className="mx-auto size-10 border-4 border-[#D4A017] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground animate-pulse">جاري إعادة المحاولة...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // After max retries exhausted, show error message
-  return (
-    <div className="flex min-h-[60vh] items-center justify-center bg-background px-4">
-      <div className="max-w-sm text-center space-y-4">
-        <div className="mx-auto size-16 rounded-full bg-muted grid place-items-center">
-          <span className="text-2xl">⚠️</span>
-        </div>
-        <h2 className="text-lg font-bold">عذراً، حدثت مشكلة</h2>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          لم نتمكن من تحميل الصفحة. يرجى التحقق من اتصالك بالإنترنت.
-        </p>
-        <button 
-          onClick={() => {
-            globalRetryCount = 0; // Reset retry count
-            hasSetupRetry.current = false; // Reset flag
-            setShouldRetry(true);
-            reset();
-          }}
-          className="inline-flex items-center justify-center rounded-xl gradient-gold text-primary px-6 py-2.5 text-sm font-bold shadow-luxe"
-        >
-          جرب من جديد
-        </button>
-        <a href="/" className="block text-sm text-muted-foreground underline hover:text-foreground transition-colors">
-          العودة للرئيسية
-        </a>
-      </div>
-    </div>
-  );
+  // Render an unobtrusive empty area; the surrounding layout (Header/Footer/BottomNav) stays.
+  return <div className="min-h-[40vh]" aria-hidden />;
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
@@ -208,31 +148,26 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const path = router.state.location.pathname;
   const isAuthRoute = path === "/auth";
 
-  // Public routes that don't need authentication
-  const publicRoutes = ["/", "/products", "/our-story", "/customers", "/try-on", "/wishlist"];
-  const isPublicRoute = publicRoutes.some(r => path === r || path.startsWith("/product/") || path.startsWith("/track/"));
+  // Save last visited route so user can resume after login
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (path !== "/auth" && !path.startsWith("/admin") && !path.startsWith("/vendor") && !path.startsWith("/delivery")) {
+      try { localStorage.setItem("hedma:last_route", path); } catch {}
+    }
+  }, [path]);
+
+  // Only gate privileged dashboards. All other pages render immediately —
+  // no loading screen, no forced redirect on refresh. Cached session restores in background.
+  const isPrivilegedRoute = path.startsWith("/admin") || path.startsWith("/vendor") || path.startsWith("/delivery");
 
   useEffect(() => {
     if (loading) return;
-    // Only redirect to auth for protected routes when not logged in
-    if (!session && !isAuthRoute && !isPublicRoute) {
+    if (!session && isPrivilegedRoute) {
       router.navigate({ to: "/auth", replace: true });
     }
-  }, [session, loading, isAuthRoute, isPublicRoute, router]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-background">
-        <div className="text-center space-y-3">
-          <div className="mx-auto size-8 border-4 border-[#D4A017] border-t-transparent rounded-full animate-spin" />
-          <div className="text-sm font-bold text-gold-gradient animate-pulse">جاري التحميل...</div>
-        </div>
-      </div>
-    );
-  }
+  }, [session, loading, isPrivilegedRoute, router]);
 
   if (!session && isAuthRoute) {
-    // Render only the auth page, no chrome
     return <main className="min-h-screen">{children}</main>;
   }
 
