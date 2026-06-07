@@ -23,6 +23,7 @@ import { ActivityTab } from "@/components/admin/ActivityTab";
 import { VendorInsightsTab } from "@/components/admin/VendorInsightsTab";
 import { ProductControlTab } from "@/components/admin/ProductControlTab";
 import { InventoryReportsTab } from "@/components/admin/InventoryReportsTab";
+import { SmartInventoryTab } from "@/components/admin/SmartInventoryTab";
 import { PasswordRecoveryTab } from "@/components/admin/PasswordRecoveryTab";
 import { NotificationsTab } from "@/components/admin/NotificationsTab";
 import { PasswordManagerTab } from "@/components/admin/PasswordManagerTab";
@@ -87,6 +88,7 @@ function AdminPanel() {
               {activeTab === "notifications" && "📢 إرسال إشعار"}
               {activeTab === "customers" && "قاعدة العملاء"}
               {activeTab === "inventory" && "الجرد والتقارير"}
+              {activeTab === "smart-inventory" && "🧠 الجرد الذكي الشامل"}
               {activeTab === "vendor-insights" && "تحليل أداء التجار"}
               {activeTab === "coupons" && "العروض والكوبونات"}
               {activeTab === "presets" && "رفع جماعي مسبق"}
@@ -138,6 +140,12 @@ function AdminPanel() {
           {activeTab === "inventory" && (
              <div className="space-y-6 animate-in fade-in duration-500">
                <InventoryReportsTab />
+             </div>
+          )}
+
+          {activeTab === "smart-inventory" && (
+             <div className="space-y-6 animate-in fade-in duration-500">
+               <SmartInventoryTab />
              </div>
           )}
 
