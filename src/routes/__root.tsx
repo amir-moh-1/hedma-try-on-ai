@@ -81,20 +81,13 @@ function NotFoundComponent() {
   );
 }
 
-/* Silent error component — never blocks the user. Logs and renders the page chrome with a small inline notice. */
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  const router = useRouter();
-
+/* Silent error component — never blocks the user and NEVER auto-invalidates
+   (auto-invalidate caused infinite re-load loops that reset cart/session state). */
+function ErrorComponent({ error }: { error: Error; reset: () => void }) {
   useEffect(() => {
     console.error("[Hedma] Error caught (silent):", error);
-    // Attempt one silent recovery in the background, then give up — no UI takeover.
-    const t = setTimeout(() => {
-      try { router.invalidate(); reset(); } catch {}
-    }, 800);
-    return () => clearTimeout(t);
-  }, [error, router, reset]);
+  }, [error]);
 
-  // Render an unobtrusive empty area; the surrounding layout (Header/Footer/BottomNav) stays.
   return <div className="min-h-[40vh]" aria-hidden />;
 }
 
