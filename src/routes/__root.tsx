@@ -17,6 +17,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { Toaster } from "@/components/ui/sonner";
 import { SocialProofPopup } from "@/components/SocialProofPopup";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
+import { AIShoppingAssistant } from "@/components/AIShoppingAssistant";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useSiteSettings } from "@/lib/settings";
 import { useEffect, useState, useRef } from "react";
@@ -174,6 +175,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         <BottomNav />
       </div>
       <FloatingWhatsApp />
+      <AIShoppingAssistant />
       <SocialProofPopup />
       <NotificationPrompt />
     </>
