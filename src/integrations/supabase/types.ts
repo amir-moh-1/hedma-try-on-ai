@@ -257,6 +257,39 @@ export type Database = {
         }
         Relationships: []
       }
+      otp_codes: {
+        Row: {
+          attempts: number
+          code: string
+          consumed: boolean
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          purpose: string
+        }
+        Insert: {
+          attempts?: number
+          code: string
+          consumed?: boolean
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          purpose?: string
+        }
+        Update: {
+          attempts?: number
+          code?: string
+          consumed?: boolean
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          purpose?: string
+        }
+        Relationships: []
+      }
       password_recovery_requests: {
         Row: {
           created_at: string
@@ -405,7 +438,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age: number | null
           avatar_url: string | null
+          country_code: string | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -416,7 +451,9 @@ export type Database = {
           username: string
         }
         Insert: {
+          age?: number | null
           avatar_url?: string | null
+          country_code?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -427,7 +464,9 @@ export type Database = {
           username: string
         }
         Update: {
+          age?: number | null
           avatar_url?: string | null
+          country_code?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
