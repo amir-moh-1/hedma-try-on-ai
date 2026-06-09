@@ -43,6 +43,8 @@ function Products() {
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["all-products"],
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
     queryFn: async () => {
       const { data } = await supabase.from("products")
         .select("id,name,price,image_url,category,stock,colors,description,created_at,variants")

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth, logActivity } from "@/lib/auth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { formatEGP } from "@/lib/format";
-import { Plus, Trash2, Edit2, Save, X, Upload, Copy, Wand2 } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, X, Upload, Copy, Wand2, Store, Package, SortAsc, SortDesc } from "lucide-react";
 import { usePreset, colorHex, type Variant } from "@/lib/presets";
 import { BulkImporter } from "@/components/vendor/BulkImporter";
 
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/vendor")({ component: VendorPanel });
 type ProductRow = {
   id: string; vendor_id: string; merchant_id: string | null; name: string; description: string | null; price: number;
   category: string; location: string | null; sizes: string[]; colors: string[]; stock: number;
-  image_url: string | null; active: boolean; variants: Variant[] | null;
+  image_url: string | null; active: boolean; variants: Variant[] | null; created_at?: string | null;
 };
 type Merchant = { id: string; shop_name: string; owner_id: string };
 
@@ -28,6 +28,9 @@ const empty = {
   merchant_id: "" as string, variants: [] as Variant[],
 };
 
+type SortField = "created_at" | "stock" | "price";
+type SortDir = "asc" | "desc";
+
 function VendorPanel() {
   const { user, isVendor, isAdmin, loading } = useAuth();
   const nav = useNavigate();
@@ -36,6 +39,9 @@ function VendorPanel() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [smartInput, setSmartInput] = useState("");
+  const [activeTab, setActiveTab] = useState<string>("__all__");
+  const [sortField, setSortField] = useState<SortField>("created_at");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   useEffect(() => {
     if (!loading && (!user || !isVendor)) nav({ to: "/auth" });
@@ -66,6 +72,46 @@ function VendorPanel() {
       return (data ?? []) as ProductRow[];
     },
   });
+
+  // Products filtered by active tab (merchant) and sorted
+  const filteredProducts = useMemo(() => {
+    const list = products ?? [];
+    const base = activeTab === "__all__"
+      ? list
+      : activeTab === "__none__"
+      ? list.filter(p => !p.merchant_id)
+      : list.filter(p => p.merchant_id === activeTab);
+    return [...base].sort((a, b) => {
+      let va: any = a[sortField];
+      let vb: any = b[sortField];
+      if (sortField === "created_at") {
+        va = va ? new Date(va).getTime() : 0;
+        vb = vb ? new Date(vb).getTime() : 0;
+      }
+      va = va ?? 0;
+      vb = vb ?? 0;
+      return sortDir === "asc" ? va - vb : vb - va;
+    });
+  }, [products, activeTab, sortField, sortDir]);
+
+  // Tabs: All + each merchant + "No merchant"
+  const tabs = useMemo(() => {
+    const list = products ?? [];
+    const used = new Set(list.map(p => p.merchant_id));
+    const tabs: { id: string; label: string; count: number }[] = [
+      { id: "__all__", label: "الكل", count: list.length },
+    ];
+    merchants.forEach(m => {
+      if (used.has(m.id)) {
+        tabs.push({ id: m.id, label: m.shop_name, count: list.filter(p => p.merchant_id === m.id).length });
+      }
+    });
+    const noneCount = list.filter(p => !p.merchant_id).length;
+    if (noneCount > 0) {
+      tabs.push({ id: "__none__", label: "بدون محل", count: noneCount });
+    }
+    return tabs;
+  }, [products, merchants]);
 
   const reset = () => { setForm({ ...empty }); setEditingId(null); };
 
@@ -98,7 +144,6 @@ function VendorPanel() {
       toast.success("تم الإضافة");
     }
     qc.invalidateQueries({ queryKey: ["vendor-products"] });
-    // Reset but keep some fields if we want, for now full reset is fine unless duplicate is clicked
     reset();
   };
 
@@ -106,7 +151,6 @@ function VendorPanel() {
     if (!smartInput) return;
     const parts = smartInput.split("|").map(p => p.trim());
     let newForm = { ...form };
-    
     parts.forEach(part => {
       if (part.includes("التاجر:")) {
         const mName = part.split(":")[1].trim();
@@ -128,7 +172,6 @@ function VendorPanel() {
         newForm.name = part.split(":")[1].trim();
       }
     });
-    
     setForm(newForm);
     setSmartInput("");
     toast.success("تم تحليل النص السريع وتفريغه في الحقول ✨");
@@ -136,14 +179,8 @@ function VendorPanel() {
 
   const duplicate = () => {
     if (!form.name) return toast.error("لا توجد بيانات لنسخها");
-    setEditingId(null); // Clear editing state to ensure it's a new insert
-    // Keep everything but clear image and variants as we usually upload new images for a new product
-    setForm(prev => ({
-      ...prev,
-      name: `${prev.name} (نسخة)`,
-      image_url: "",
-      variants: []
-    }));
+    setEditingId(null);
+    setForm(prev => ({ ...prev, name: `${prev.name} (نسخة)`, image_url: "", variants: [] }));
     toast.success("تم نسخ البيانات، أضف الصور الجديدة واضغط حفظ");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -195,7 +232,12 @@ function VendorPanel() {
   const removeVar = (i: number) =>
     setForm((p) => ({ ...p, variants: p.variants.filter((_, j) => j !== i) }));
 
-  if (loading) return <div className="p-10 text-center">...</div>;
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortField(field); setSortDir("desc"); }
+  };
+
+  if (loading) return <div className="p-10 text-center text-muted-foreground">جاري التحميل...</div>;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10" dir="rtl">
@@ -203,6 +245,7 @@ function VendorPanel() {
         لوحة التاجر {isAdmin && <span className="text-sm text-muted-foreground">(صلاحيات مدير)</span>}
       </h1>
 
+      {/* Product Form */}
       <div className="rounded-2xl border bg-card p-6 mb-8 shadow-luxe space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-lg flex items-center gap-2">
@@ -216,10 +259,10 @@ function VendorPanel() {
           <div className="bg-muted/30 p-4 rounded-xl border border-dashed mb-4">
             <Label className="flex items-center gap-2 mb-2 font-bold"><Wand2 className="size-4 text-gold-gradient" /> الإدخال السريع (Smart Text)</Label>
             <div className="flex gap-2">
-              <Input 
-                value={smartInput} 
-                onChange={(e) => setSmartInput(e.target.value)} 
-                placeholder="الاسم: تيشيرت صيفي | التاجر: السنباطي | اللون: أحمر, أزرق | المقاس: M, L | السعر: 450" 
+              <Input
+                value={smartInput}
+                onChange={(e) => setSmartInput(e.target.value)}
+                placeholder="الاسم: تيشيرت صيفي | التاجر: السنباطي | اللون: أحمر, أزرق | المقاس: M, L | السعر: 450"
               />
               <Button onClick={parseSmartInput} variant="outline" className="shrink-0 text-primary gradient-gold">تحليل النص</Button>
             </div>
@@ -333,28 +376,85 @@ function VendorPanel() {
 
       {!editingId && <BulkImporter user={user} merchants={merchants} onSuccess={() => qc.invalidateQueries({ queryKey: ["vendor-products"] })} />}
 
-      <h2 className="font-bold text-lg mb-3">{isAdmin ? "كل المنتجات" : "منتجاتي"}</h2>
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {(products ?? []).map((p) => (
-          <div key={p.id} className="rounded-2xl border bg-card p-3 flex gap-3">
-            <div className="size-24 rounded-lg overflow-hidden bg-muted shrink-0">
-              {p.image_url && <img src={p.image_url} className="size-full object-cover" alt={p.name} />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold line-clamp-1">{p.name}</div>
-              <div className="text-xs text-muted-foreground">
-                {p.category} • مخزون {p.stock} • {p.active ? "✅" : "❌"}
-                {Array.isArray(p.variants) && p.variants.length > 0 && ` • ${p.variants.length} لون`}
-              </div>
-              <div className="font-bold mt-1">{formatEGP(p.price)}</div>
-              <div className="flex gap-2 mt-2">
-                <Button size="sm" variant="outline" onClick={() => edit(p)}><Edit2 className="size-3" /></Button>
-                <Button size="sm" variant="destructive" onClick={() => del(p.id)}><Trash2 className="size-3" /></Button>
-              </div>
-            </div>
+      {/* ===== INVENTORY: Merchant Tabs ===== */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h2 className="font-bold text-lg flex items-center gap-2">
+            <Package className="size-5 text-gold" />
+            {isAdmin ? "كل المنتجات" : "منتجاتي"} ({(products ?? []).length})
+          </h2>
+          {/* Sort Controls */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">ترتيب:</span>
+            {(["created_at", "stock", "price"] as SortField[]).map(f => (
+              <button
+                key={f}
+                onClick={() => toggleSort(f)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs border transition ${sortField === f ? "gradient-gold text-primary border-transparent" : "hover:border-foreground/30"}`}
+              >
+                {f === "created_at" ? "الأحدث" : f === "stock" ? "المخزون" : "السعر"}
+                {sortField === f && (sortDir === "asc" ? <SortAsc className="size-3" /> : <SortDesc className="size-3" />)}
+              </button>
+            ))}
           </div>
-        ))}
-        {(products ?? []).length === 0 && <div className="col-span-full text-center text-muted-foreground py-10">لم تضف أي منتجات بعد</div>}
+        </div>
+
+        {/* Merchant Tabs */}
+        {tabs.length > 1 && (
+          <div className="flex overflow-x-auto gap-2 pb-2 mb-4 no-scrollbar">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold shrink-0 border transition ${
+                  activeTab === tab.id
+                    ? "gradient-gold text-primary border-transparent shadow-sm"
+                    : "bg-card hover:border-foreground/30"
+                }`}
+              >
+                {tab.id !== "__all__" && tab.id !== "__none__" && <Store className="size-3.5" />}
+                {tab.label}
+                <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Products Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredProducts.map((p) => (
+            <div key={p.id} className="rounded-2xl border bg-card p-3 flex gap-3 hover:shadow-luxe transition">
+              <div className="size-24 rounded-lg overflow-hidden bg-muted shrink-0">
+                {p.image_url && <img src={p.image_url} className="size-full object-cover" alt={p.name} />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold line-clamp-1 text-sm">{p.name}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {p.category} • مخزون {p.stock} • {p.active ? "✅ متاح" : "❌ مخفي"}
+                  {Array.isArray(p.variants) && p.variants.length > 0 && ` • ${p.variants.length} لون`}
+                </div>
+                {p.merchant_id && merchants.find(m => m.id === p.merchant_id) && (
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
+                    <Store className="size-3" />
+                    {merchants.find(m => m.id === p.merchant_id)?.shop_name}
+                  </div>
+                )}
+                <div className="font-bold mt-1">{formatEGP(p.price)}</div>
+                <div className="flex gap-2 mt-2">
+                  <Button size="sm" variant="outline" onClick={() => edit(p)}><Edit2 className="size-3" /></Button>
+                  <Button size="sm" variant="destructive" onClick={() => del(p.id)}><Trash2 className="size-3" /></Button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {filteredProducts.length === 0 && (
+            <div className="col-span-full text-center text-muted-foreground py-10">
+              {activeTab === "__all__" ? "لم تضف أي منتجات بعد" : "لا توجد منتجات في هذا المحل"}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

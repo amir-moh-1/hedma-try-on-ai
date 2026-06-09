@@ -1,7 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@500;700;900&display=swap');
+
 
 @custom-variant dark (&:is(.dark *));
 
@@ -48,6 +48,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ===== DEFAULT / PREMIUM BASE THEME ===== */
 :root {
   --radius: 0.75rem;
   --background: #F5F0E8;
@@ -105,6 +106,104 @@
   --ring: #D4A017;
 }
 
+/* ===== YOUTH THEME (Ages 0–25) — Light ===== */
+.storefront-youth {
+  --background: #F0FDF4;
+  --foreground: #0F1A0F;
+  --card: #FFFFFF;
+  --card-foreground: #0F1A0F;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F1A0F;
+  --primary: #16A34A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #DCFCE7;
+  --secondary-foreground: #14532D;
+  --muted: #DCFCE7;
+  --muted-foreground: #4B7A5B;
+  --accent: #BBF7D0;
+  --accent-foreground: #14532D;
+  --gold: #22C55E;
+  --gold-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #BBF7D0;
+  --input: #BBF7D0;
+  --ring: #22C55E;
+}
+
+/* ===== YOUTH THEME — Dark ===== */
+.dark.storefront-youth,
+.storefront-youth.dark {
+  --background: #052E16;
+  --foreground: #F0FDF4;
+  --card: #0A3D1F;
+  --card-foreground: #F0FDF4;
+  --popover: #0A3D1F;
+  --popover-foreground: #F0FDF4;
+  --primary: #4ADE80;
+  --primary-foreground: #052E16;
+  --secondary: #14532D;
+  --secondary-foreground: #DCFCE7;
+  --muted: #14532D;
+  --muted-foreground: #86EFAC;
+  --accent: #14532D;
+  --accent-foreground: #DCFCE7;
+  --gold: #4ADE80;
+  --gold-foreground: #052E16;
+  --border: #166534;
+  --input: #166534;
+  --ring: #4ADE80;
+}
+
+/* ===== PREMIUM THEME (Ages 26+) — Warm Beige/Caramel ===== */
+.storefront-premium {
+  --background: #FAF7F2;
+  --foreground: #2C1810;
+  --card: #FFFFFF;
+  --card-foreground: #2C1810;
+  --popover: #FFFFFF;
+  --popover-foreground: #2C1810;
+  --primary: #2C1810;
+  --primary-foreground: #FAF7F2;
+  --secondary: #F0E8DC;
+  --secondary-foreground: #2C1810;
+  --muted: #F0E8DC;
+  --muted-foreground: #8B7355;
+  --accent: #E8D5B8;
+  --accent-foreground: #2C1810;
+  --gold: #B8860B;
+  --gold-foreground: #FAF7F2;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #E8D5B8;
+  --input: #E8D5B8;
+  --ring: #B8860B;
+}
+
+/* ===== PREMIUM THEME — Dark (Charcoal/Warm) ===== */
+.dark.storefront-premium,
+.storefront-premium.dark {
+  --background: #1C1408;
+  --foreground: #FAF7F2;
+  --card: #2A1F0E;
+  --card-foreground: #FAF7F2;
+  --popover: #2A1F0E;
+  --popover-foreground: #FAF7F2;
+  --primary: #FAF7F2;
+  --primary-foreground: #1C1408;
+  --secondary: #3D2E15;
+  --secondary-foreground: #FAF7F2;
+  --muted: #3D2E15;
+  --muted-foreground: #C4A882;
+  --accent: #3D2E15;
+  --accent-foreground: #FAF7F2;
+  --gold: #D4A017;
+  --gold-foreground: #1C1408;
+  --border: #4D3A1C;
+  --input: #4D3A1C;
+  --ring: #D4A017;
+}
+
 @layer base {
   * { border-color: var(--color-border); }
   html { font-family: var(--font-sans); }
@@ -125,14 +224,38 @@
   .gradient-gold {
     background-image: linear-gradient(135deg, #F5C242, #D4A017);
   }
+  .storefront-youth .gradient-gold {
+    background-image: linear-gradient(135deg, #4ADE80, #16A34A);
+  }
+  .storefront-premium .gradient-gold {
+    background-image: linear-gradient(135deg, #D4A017, #B8860B);
+  }
   .text-gold-gradient {
     background-image: linear-gradient(135deg, #F5C242, #B8860B);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
+  .storefront-youth .text-gold-gradient {
+    background-image: linear-gradient(135deg, #4ADE80, #16A34A);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .storefront-premium .text-gold-gradient {
+    background-image: linear-gradient(135deg, #D4A017, #8B6914);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
   .shadow-luxe {
     box-shadow: 0 20px 50px -20px rgba(26, 26, 26, 0.15);
+  }
+  .storefront-youth .shadow-luxe {
+    box-shadow: 0 20px 50px -20px rgba(22, 163, 74, 0.2);
+  }
+  .storefront-premium .shadow-luxe {
+    box-shadow: 0 20px 50px -20px rgba(184, 134, 11, 0.18);
   }
   .animate-marquee {
     animation: marquee 35s linear infinite;
@@ -141,6 +264,26 @@
     from { transform: translateX(0); }
     to { transform: translateX(50%); }
   }
+}
+
+/* ===== Youth Theme — Vibrant Card & Badge Overrides ===== */
+.storefront-youth .group.block.rounded-2xl {
+  border-radius: 1.25rem;
+  border-width: 2px;
+}
+.storefront-youth .group.block.rounded-2xl:hover {
+  border-color: #22C55E;
+  box-shadow: 0 10px 30px -10px rgba(34, 197, 94, 0.35);
+}
+
+/* ===== Premium Theme — Refined Card Overrides ===== */
+.storefront-premium .group.block.rounded-2xl {
+  border-radius: 0.5rem;
+  border-color: #E8D5B8;
+}
+.storefront-premium .group.block.rounded-2xl:hover {
+  border-color: #B8860B;
+  box-shadow: 0 12px 40px -12px rgba(184, 134, 11, 0.25);
 }
 
 /* Hide Lovable Branding & Platform Badges */
@@ -159,24 +302,17 @@ button[title*="Lovable"] {
 
 /* ===== Mobile Responsiveness Fixes ===== */
 @media (max-width: 480px) {
-  /* Prevent horizontal overflow */
   html, body {
     overflow-x: hidden;
     max-width: 100vw;
   }
-  
-  /* Hero section fixes */
   .font-serif.font-bold.leading-\[1\] {
     font-size: 2.5rem !important;
   }
-  
-  /* Tighter padding on mobile */
   section {
     padding-left: 1rem;
     padding-right: 1rem;
   }
-
-  /* Bottom nav safe area */
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }

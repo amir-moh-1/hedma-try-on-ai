@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
@@ -49,29 +49,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
+  const initializedRef = useRef(false);
 
   const loadProfileRoles = async (uid: string) => {
-    const [{ data: p }, { data: r }] = await Promise.all([
-      supabase.from("profiles").select("id,username,phone,full_name").eq("id", uid).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", uid),
-    ]);
-    setProfile(p as Profile | null);
-    setRoles(((r ?? []) as { role: Role }[]).map((x) => x.role));
+    try {
+      const [{ data: p }, { data: r }] = await Promise.all([
+        supabase.from("profiles").select("id,username,phone,full_name").eq("id", uid).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", uid),
+      ]);
+      setProfile(p as Profile | null);
+      setRoles(((r ?? []) as { role: Role }[]).map((x) => x.role));
+    } catch {
+      // Graceful failure — don't leave app in broken state
+    }
   };
 
   useEffect(() => {
+    // Listen for auth state changes (handles token refresh, sign-in, sign-out)
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) setTimeout(() => loadProfileRoles(s.user.id), 0);
-      else { setProfile(null); setRoles([]); }
+      if (s?.user) {
+        setTimeout(() => loadProfileRoles(s.user.id), 0);
+      } else {
+        setProfile(null);
+        setRoles([]);
+      }
     });
+
+    // Restore persisted session from localStorage on mount
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      if (data.session?.user) loadProfileRoles(data.session.user.id);
+      if (!initializedRef.current) {
+        initializedRef.current = true;
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+        if (data.session?.user) {
+          loadProfileRoles(data.session.user.id).finally(() => setLoading(false));
+        } else {
+          setLoading(false);
+        }
+      }
+    }).catch(() => {
       setLoading(false);
     });
+
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -80,7 +101,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (input.includes("@")) {
       email = input.toLowerCase();
     } else {
-      // Lookup by username OR full_name
       const { data: pf } = await supabase
         .from("profiles")
         .select("id,email,username,full_name")
@@ -91,7 +111,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (pfAny?.email) {
         email = String(pfAny.email).toLowerCase();
       } else {
-        // fallback to legacy local domain pattern
         email = `${input.toLowerCase()}@${USERNAME_DOMAIN}`;
       }
     }
@@ -100,12 +119,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { error: error.message };
 
     if (authData.user) {
-      const [{ data: profile }, { data: settings }] = await Promise.all([
+      const [{ data: profileData }, { data: settings }] = await Promise.all([
         supabase.from("profiles").select("is_banned").eq("id", authData.user.id).maybeSingle(),
         supabase.from("site_settings").select("quick_links").eq("id", "main").maybeSingle(),
       ]);
       const shadowBanned = (settings?.quick_links as any)?.__metadata?.banned_users?.[authData.user.id];
-      if ((profile as any)?.is_banned || shadowBanned) {
+      if ((profileData as any)?.is_banned || shadowBanned) {
         await supabase.auth.signOut();
         return { error: "عذراً، هذا الحساب معطل حالياً. يرجى التواصل مع الإدارة." };
       }
@@ -121,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: {
         data: { username, phone, full_name, plain_password: password },
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/` : "/",
       },
     });
     if (error) return { error: error.message };
@@ -137,11 +156,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     const { data } = await supabase.auth.getUser();
-    if (data.user) await supabase.from("activity_logs").insert({ user_id: data.user.id, action: "logout", details: {} as never });
+    if (data.user) {
+      await supabase.from("activity_logs").insert({ user_id: data.user.id, action: "logout", details: {} as never });
+    }
     await supabase.auth.signOut();
   };
 
-  const refreshRoles = async () => { if (user) await loadProfileRoles(user.id); };
+  const refreshRoles = async () => {
+    if (user) await loadProfileRoles(user.id);
+  };
 
   return (
     <Ctx.Provider value={{
