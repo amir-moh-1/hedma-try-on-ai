@@ -83,7 +83,7 @@ function NotFoundComponent() {
 }
 
 /* Soft error component — no blank screen and no auto refresh/invalidate. */
-function ErrorComponent({ error }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
     console.error("[Hedma] Error caught:", error);
   }, [error]);
