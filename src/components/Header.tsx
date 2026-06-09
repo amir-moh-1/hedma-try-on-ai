@@ -6,7 +6,7 @@ import { useCart } from "@/lib/cart";
 import { Button } from "./ui/button";
 import { NotificationBell } from "./NotificationBell";
 import { UserNotificationBell } from "./UserNotificationBell";
-import { ShoppingBag, Heart, User, LayoutDashboard, LogOut, Sparkles, Store, Truck, Package, Settings, Moon, Sun } from "lucide-react";
+import { ShoppingBag, Heart, User, LayoutDashboard, LogOut, Sparkles, Store, Truck, Package, Settings, Moon, Sun, Globe2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "./ui/dropdown-menu";
 import { useTheme } from "./ThemeProvider";
 
@@ -90,7 +90,7 @@ export function Header() {
                   <DropdownMenuItem onClick={() => nav({ to: "/delivery" })}><Truck className="size-4 ml-2" /> لوحة التوصيل</DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => nav({ to: "/my-orders" })}><Package className="size-4 ml-2" /> طلباتي</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => nav({ to: "/cart" })}><ShoppingBag className="size-4 ml-2" /> سلتي</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => nav({ to: "/my-world" })}><Globe2 className="size-4 ml-2" /> عالمي</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => nav({ to: "/profile" })}><Settings className="size-4 ml-2" /> إعدادات الحساب</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => signOut()}><LogOut className="size-4 ml-2" /> تسجيل الخروج</DropdownMenuItem>

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeStorefrontBuilder, splitQuickLinks } from "@/lib/storefrontConfig";
 
 export type SiteSettings = {
   whatsapp: string;
@@ -35,17 +36,7 @@ export function useSiteSettings() {
       if (!data) return DEFAULTS;
 
       // Smart Metadata Fallback
-      let meta: any = {};
-      let links: any[] = DEFAULTS.quick_links;
-
-      if (data.quick_links) {
-        if (Array.isArray(data.quick_links)) {
-          links = data.quick_links;
-        } else {
-          links = (data.quick_links as any).links || DEFAULTS.quick_links;
-          meta = (data.quick_links as any).__metadata || {};
-        }
-      }
+      const { links, meta } = splitQuickLinks(data.quick_links);
       
       return {
         whatsapp: data.whatsapp ?? DEFAULTS.whatsapp,
@@ -67,6 +58,7 @@ export function useSiteSettings() {
         // Admin shadow data
         banned_users: meta.banned_users || {},
         user_passwords: meta.user_passwords || {},
+        storefront_builder: normalizeStorefrontBuilder(meta.storefront_builder),
       } as any;
     },
     staleTime: 60_000,
