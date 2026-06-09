@@ -43,6 +43,18 @@ const toEmail = (input: string) => {
   return encoded.includes("@") ? encoded.toLowerCase() : `${encoded.toLowerCase()}@${USERNAME_DOMAIN}`;
 };
 
+const withTimeout = async <T,>(promise: Promise<T>, ms = 8000): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("timeout")), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -51,12 +63,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadProfileRoles = async (uid: string) => {
-    const [{ data: p }, { data: r }] = await Promise.all([
-      supabase.from("profiles").select("id,username,phone,full_name").eq("id", uid).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", uid),
-    ]);
-    setProfile(p as Profile | null);
-    setRoles(((r ?? []) as { role: Role }[]).map((x) => x.role));
+    try {
+      const [{ data: p }, { data: r }] = await withTimeout(Promise.all([
+        supabase.from("profiles").select("id,username,phone,full_name").eq("id", uid).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", uid),
+      ]), 8000);
+      setProfile(p as Profile | null);
+      setRoles(((r ?? []) as { role: Role }[]).map((x) => x.role));
+    } catch (err) {
+      console.warn("[Hedma] Profile preload skipped:", err);
+    }
   };
 
   useEffect(() => {
@@ -66,12 +82,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (s?.user) setTimeout(() => loadProfileRoles(s.user.id), 0);
       else { setProfile(null); setRoles([]); }
     });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      if (data.session?.user) loadProfileRoles(data.session.user.id);
-      setLoading(false);
-    });
+    withTimeout(supabase.auth.getSession(), 6000)
+      .then(({ data }) => {
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+        if (data.session?.user) loadProfileRoles(data.session.user.id);
+      })
+      .catch((err) => {
+        console.warn("[Hedma] Session restore skipped:", err);
+      })
+      .finally(() => setLoading(false));
     return () => sub.subscription.unsubscribe();
   }, []);
 

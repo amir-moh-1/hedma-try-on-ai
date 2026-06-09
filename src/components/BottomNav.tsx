@@ -1,5 +1,5 @@
 ﻿import { Link, useLocation } from "@tanstack/react-router";
-import { Home, ShoppingBag, Heart, Sparkles, User } from "lucide-react";
+import { Home, ShoppingBag, Heart, Sparkles, Globe2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
 export function BottomNav() {
@@ -12,7 +12,7 @@ export function BottomNav() {
     { label: "منتجات", icon: ShoppingBag, to: "/products" },
     { label: "المفضلة", icon: Heart, to: "/wishlist" },
     { label: "AI Try-On", icon: Sparkles, to: "/try-on" },
-    { label: "حسابي", icon: User, to: user ? "/profile" : "/auth" },
+    { label: "عالمي", icon: Globe2, to: user ? "/my-world" : "/auth" },
   ];
 
   return (

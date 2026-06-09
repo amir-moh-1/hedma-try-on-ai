@@ -8,6 +8,7 @@ import { Countdown } from "@/components/Countdown";
 import { AuthGate } from "@/components/AuthGate";
 import { SmartSearch } from "@/components/SmartSearch";
 import { useSiteSettings } from "@/lib/settings";
+import { StorefrontHome } from "@/components/StorefrontHome";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -52,6 +53,13 @@ function Home() {
   ];
 
   return (
+    <>
+      <AuthGate />
+      <StorefrontHome bestSellers={bestSellers ?? []} globalOffer={globalOffer} />
+    </>
+  );
+
+  return (
     <div className="bg-background text-foreground" dir="rtl">
       <AuthGate />
 
@@ -59,11 +67,11 @@ function Home() {
         <section className="border-b border-gold/10 bg-gradient-to-r from-gold/5 via-transparent to-gold/5">
           <div className="mx-auto max-w-7xl px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <span className="text-[10px] tracking-[0.25em] uppercase font-black text-gold">{globalOffer.title}</span>
+              <span className="text-[10px] tracking-[0.25em] uppercase font-black text-gold">{globalOffer?.title}</span>
               <span className="w-8 h-px bg-gold/40" />
-              <span className="font-serif text-xl md:text-2xl font-bold">خصم {globalOffer.percent}% — لفترة محدودة</span>
+              <span className="font-serif text-xl md:text-2xl font-bold">خصم {globalOffer?.percent}% — لفترة محدودة</span>
             </div>
-            <Countdown endsAt={globalOffer.ends_at} />
+            <Countdown endsAt={globalOffer?.ends_at ?? new Date().toISOString()} />
           </div>
         </section>
       )}

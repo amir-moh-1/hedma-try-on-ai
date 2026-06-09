@@ -82,14 +82,25 @@ function NotFoundComponent() {
   );
 }
 
-/* Silent error component — never blocks the user and NEVER auto-invalidates
-   (auto-invalidate caused infinite re-load loops that reset cart/session state). */
-function ErrorComponent({ error }: { error: Error; reset: () => void }) {
+/* Soft error component — no blank screen and no auto refresh/invalidate. */
+function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
-    console.error("[Hedma] Error caught (silent):", error);
+    console.error("[Hedma] Error caught:", error);
   }, [error]);
 
-  return <div className="min-h-[40vh]" aria-hidden />;
+  return (
+    <div className="min-h-[60vh] grid place-items-center bg-background px-4" dir="rtl">
+      <div className="max-w-md rounded-2xl border bg-card p-6 text-center shadow-luxe">
+        <h1 className="font-display text-2xl font-bold mb-2">الموقع شغال</h1>
+        <p className="text-sm text-muted-foreground leading-7 mb-5">
+          حصلت مشكلة مؤقتة في جزء من الصفحة، من غير ما نعمل تحديث إجباري أو نخرجك من مكانك.
+        </p>
+        <button onClick={reset} className="rounded-xl gradient-gold text-primary px-6 py-3 text-sm font-bold">
+          متابعة التصفح
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
@@ -155,10 +166,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const isPrivilegedRoute = path.startsWith("/admin") || path.startsWith("/vendor") || path.startsWith("/delivery");
 
   useEffect(() => {
-    if (loading) return;
-    if (!session && isPrivilegedRoute) {
-      router.navigate({ to: "/auth", replace: true });
-    }
+    if (loading || !isPrivilegedRoute || session) return;
+    const t = window.setTimeout(() => router.navigate({ to: "/auth", replace: true }), 1200);
+    return () => window.clearTimeout(t);
   }, [session, loading, isPrivilegedRoute, router]);
 
   if (!session && isAuthRoute) {

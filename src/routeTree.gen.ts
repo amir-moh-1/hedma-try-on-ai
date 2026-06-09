@@ -15,6 +15,7 @@ import { Route as TryOnRouteImport } from './routes/try-on'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as OurStoryRouteImport } from './routes/our-story'
+import { Route as MyWorldRouteImport } from './routes/my-world'
 import { Route as MyOrdersRouteImport } from './routes/my-orders'
 import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as CustomersRouteImport } from './routes/customers'
@@ -53,6 +54,11 @@ const ProductsRoute = ProductsRouteImport.update({
 const OurStoryRoute = OurStoryRouteImport.update({
   id: '/our-story',
   path: '/our-story',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyWorldRoute = MyWorldRouteImport.update({
+  id: '/my-world',
+  path: '/my-world',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyOrdersRoute = MyOrdersRouteImport.update({
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/customers': typeof CustomersRoute
   '/delivery': typeof DeliveryRoute
   '/my-orders': typeof MyOrdersRoute
+  '/my-world': typeof MyWorldRoute
   '/our-story': typeof OurStoryRoute
   '/products': typeof ProductsRoute
   '/profile': typeof ProfileRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/customers': typeof CustomersRoute
   '/delivery': typeof DeliveryRoute
   '/my-orders': typeof MyOrdersRoute
+  '/my-world': typeof MyWorldRoute
   '/our-story': typeof OurStoryRoute
   '/products': typeof ProductsRoute
   '/profile': typeof ProfileRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/customers': typeof CustomersRoute
   '/delivery': typeof DeliveryRoute
   '/my-orders': typeof MyOrdersRoute
+  '/my-world': typeof MyWorldRoute
   '/our-story': typeof OurStoryRoute
   '/products': typeof ProductsRoute
   '/profile': typeof ProfileRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/customers'
     | '/delivery'
     | '/my-orders'
+    | '/my-world'
     | '/our-story'
     | '/products'
     | '/profile'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/customers'
     | '/delivery'
     | '/my-orders'
+    | '/my-world'
     | '/our-story'
     | '/products'
     | '/profile'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/customers'
     | '/delivery'
     | '/my-orders'
+    | '/my-world'
     | '/our-story'
     | '/products'
     | '/profile'
@@ -215,6 +227,7 @@ export interface RootRouteChildren {
   CustomersRoute: typeof CustomersRoute
   DeliveryRoute: typeof DeliveryRoute
   MyOrdersRoute: typeof MyOrdersRoute
+  MyWorldRoute: typeof MyWorldRoute
   OurStoryRoute: typeof OurStoryRoute
   ProductsRoute: typeof ProductsRoute
   ProfileRoute: typeof ProfileRoute
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       path: '/our-story'
       fullPath: '/our-story'
       preLoaderRoute: typeof OurStoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-world': {
+      id: '/my-world'
+      path: '/my-world'
+      fullPath: '/my-world'
+      preLoaderRoute: typeof MyWorldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-orders': {
@@ -343,6 +363,7 @@ const rootRouteChildren: RootRouteChildren = {
   CustomersRoute: CustomersRoute,
   DeliveryRoute: DeliveryRoute,
   MyOrdersRoute: MyOrdersRoute,
+  MyWorldRoute: MyWorldRoute,
   OurStoryRoute: OurStoryRoute,
   ProductsRoute: ProductsRoute,
   ProfileRoute: ProfileRoute,
