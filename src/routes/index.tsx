@@ -8,6 +8,7 @@ import { Countdown } from "@/components/Countdown";
 import { AuthGate } from "@/components/AuthGate";
 import { SmartSearch } from "@/components/SmartSearch";
 import { useSiteSettings } from "@/lib/settings";
+import { StorefrontHome } from "@/components/StorefrontHome";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -50,6 +51,13 @@ function Home() {
     { label: "إكسسوارات", icon: "🎒", key: "accessories" },
     { label: "قمصان", icon: "👔", key: "shirts" },
   ];
+
+  return (
+    <>
+      <AuthGate />
+      <StorefrontHome bestSellers={bestSellers ?? []} globalOffer={globalOffer} />
+    </>
+  );
 
   return (
     <div className="bg-background text-foreground" dir="rtl">

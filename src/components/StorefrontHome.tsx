@@ -7,6 +7,7 @@ import { useSiteSettings } from "@/lib/settings";
 import { useStorefrontAudience } from "@/lib/useStorefrontAudience";
 import { defaultStorefrontThemes, shapeClass } from "@/lib/storefrontConfig";
 import streetHero from "@/assets/hadma-street-hero.jpg";
+import type { CSSProperties } from "react";
 
 export function StorefrontHome({ bestSellers = [], globalOffer }: { bestSellers?: any[]; globalOffer?: any }) {
   const settings = useSiteSettings() as any;
@@ -22,7 +23,7 @@ export function StorefrontHome({ bestSellers = [], globalOffer }: { bestSellers?
     "--sf-text": theme.textColor,
     "--sf-muted": theme.mutedTextColor,
     "--sf-accent": theme.accentColor,
-  } as React.CSSProperties;
+  } as CSSProperties;
 
   return (
     <div style={css} className="bg-[var(--sf-bg)] text-[var(--sf-text)]" dir="rtl">
